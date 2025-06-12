@@ -1,0 +1,304 @@
+syntax = "proto3";
+
+package mcp;
+
+// Common types and enums
+enum Role {
+  ROLE_UNSPECIFIED = 0;
+  ROLE_USER = 1;
+  ROLE_ASSISTANT = 2;
+}
+
+enum LoggingLevel {
+  LOGGING_LEVEL_UNSPECIFIED = 0;
+  LOGGING_LEVEL_DEBUG = 1;
+  LOGGING_LEVEL_INFO = 2;
+  LOGGING_LEVEL_NOTICE = 3;
+  LOGGING_LEVEL_WARNING = 4;
+  LOGGING_LEVEL_ERROR = 5;
+  LOGGING_LEVEL_CRITICAL = 6;
+  LOGGING_LEVEL_ALERT = 7;
+  LOGGING_LEVEL_EMERGENCY = 8;
+}
+
+// Base message types
+message JSONRPCMessage {
+  oneof message {
+    JSONRPCRequest request = 1;
+    JSONRPCNotification notification = 2;
+    JSONRPCBatchRequest batch_request = 3;
+    JSONRPCResponse response = 4;
+    JSONRPCError error = 5;
+    JSONRPCBatchResponse batch_response = 6;
+  }
+}
+
+message JSONRPCRequest {
+  string jsonrpc = 1;
+  string id = 2;
+  string method = 3;
+  RequestParams params = 4;
+}
+
+message JSONRPCNotification {
+  string jsonrpc = 1;
+  string method = 2;
+  NotificationParams params = 3;
+}
+
+message JSONRPCResponse {
+  string jsonrpc = 1;
+  string id = 2;
+  Result result = 3;
+}
+
+message JSONRPCError {
+  string jsonrpc = 1;
+  string id = 2;
+  Error error = 3;
+}
+
+message JSONRPCBatchRequest {
+  repeated JSONRPCRequest requests = 1;
+}
+
+message JSONRPCBatchResponse {
+  repeated JSONRPCResponse responses = 1;
+}
+
+// Parameter types
+message RequestParams {
+  MetaParams _meta = 1;
+  map<string, bytes> additional_params = 2;
+}
+
+message NotificationParams {
+  MetaParams _meta = 1;
+  map<string, bytes> additional_params = 2;
+}
+
+message MetaParams {
+  string progress_token = 1;
+  map<string, bytes> additional_meta = 2;
+}
+
+message Result {
+  MetaResult _meta = 1;
+  map<string, bytes> additional_result = 2;
+}
+
+message MetaResult {
+  map<string, bytes> additional_meta = 1;
+}
+
+message Error {
+  int32 code = 1;
+  string message = 2;
+  bytes data = 3;
+}
+
+// Implementation info
+message Implementation {
+  string name = 1;
+  string version = 2;
+}
+
+// Capabilities
+message ClientCapabilities {
+  map<string, bytes> experimental = 1;
+  RootsCapability roots = 2;
+  SamplingCapability sampling = 3;
+}
+
+message ServerCapabilities {
+  map<string, bytes> experimental = 1;
+  LoggingCapability logging = 2;
+  CompletionsCapability completions = 3;
+  PromptsCapability prompts = 4;
+  ResourcesCapability resources = 5;
+  ToolsCapability tools = 6;
+}
+
+message RootsCapability {
+  bool list_changed = 1;
+}
+
+message SamplingCapability {}
+
+message LoggingCapability {}
+
+message CompletionsCapability {}
+
+message PromptsCapability {
+  bool list_changed = 1;
+}
+
+message ResourcesCapability {
+  bool subscribe = 1;
+  bool list_changed = 2;
+}
+
+message ToolsCapability {
+  bool list_changed = 1;
+}
+
+// Resource related messages
+message Resource {
+  string uri = 1;
+  string name = 2;
+  string description = 3;
+  string mime_type = 4;
+  Annotations annotations = 5;
+  int64 size = 6;
+}
+
+message ResourceTemplate {
+  string uri_template = 1;
+  string name = 2;
+  string description = 3;
+  string mime_type = 4;
+  Annotations annotations = 5;
+}
+
+message ResourceContents {
+  string uri = 1;
+  string mime_type = 2;
+  oneof content {
+    TextResourceContents text = 3;
+    BlobResourceContents blob = 4;
+  }
+}
+
+message TextResourceContents {
+  string text = 1;
+}
+
+message BlobResourceContents {
+  bytes blob = 1;
+}
+
+// Tool related messages
+message Tool {
+  string name = 1;
+  string description = 2;
+  InputSchema input_schema = 3;
+  ToolAnnotations annotations = 4;
+}
+
+message InputSchema {
+  string type = 1;
+  map<string, bytes> properties = 2;
+  repeated string required = 3;
+}
+
+message ToolAnnotations {
+  string title = 1;
+  bool read_only_hint = 2;
+  bool destructive_hint = 3;
+  bool idempotent_hint = 4;
+  bool open_world_hint = 5;
+}
+
+// Annotations
+message Annotations {
+  repeated Role audience = 1;
+  float priority = 2;
+}
+
+// Content types
+message TextContent {
+  string type = 1;
+  string text = 2;
+  Annotations annotations = 3;
+}
+
+message ImageContent {
+  string type = 1;
+  bytes data = 2;
+  string mime_type = 3;
+  Annotations annotations = 4;
+}
+
+message AudioContent {
+  string type = 1;
+  bytes data = 2;
+  string mime_type = 3;
+  Annotations annotations = 4;
+}
+
+// Model preferences
+message ModelPreferences {
+  repeated ModelHint hints = 1;
+  float cost_priority = 2;
+  float speed_priority = 3;
+  float intelligence_priority = 4;
+}
+
+message ModelHint {
+  string name = 1;
+}
+
+// References
+message ResourceReference {
+  string type = 1;
+  string uri = 2;
+}
+
+message PromptReference {
+  string type = 1;
+  string name = 2;
+}
+
+// Root related messages
+message Root {
+  string uri = 1;
+  string name = 2;
+}
+
+// Request/Response messages
+message InitializeRequest {
+  string method = 1;
+  InitializeParams params = 2;
+}
+
+message InitializeParams {
+  string protocol_version = 1;
+  ClientCapabilities capabilities = 2;
+  Implementation client_info = 3;
+}
+
+message InitializeResult {
+  string protocol_version = 1;
+  ServerCapabilities capabilities = 2;
+  Implementation server_info = 3;
+  string instructions = 4;
+}
+
+message ListResourcesRequest {
+  string method = 1;
+  PaginatedParams params = 2;
+}
+
+message ListResourcesResult {
+  repeated Resource resources = 1;
+  string next_cursor = 2;
+}
+
+message ReadResourceRequest {
+  string method = 1;
+  ReadResourceParams params = 2;
+}
+
+message ReadResourceParams {
+  string uri = 1;
+}
+
+message ReadResourceResult {
+  repeated ResourceContents contents = 1;
+}
+
+message PaginatedParams {
+  string cursor = 1;
+}
+
+// Add other request/response messages as needed... 

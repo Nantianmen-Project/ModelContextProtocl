@@ -1,0 +1,137 @@
+syntax = "proto3";
+
+package mcp;
+
+import "mcp.proto";
+
+// Service definition for MCP core functionality
+service MCPService {
+  // Registration and initialization
+  rpc Register(RegisterRequest) returns (RegisterResponse);
+  rpc Initialize(InitializeRequest) returns (InitializeResult);
+  
+  // Message handling
+  rpc HandleRequest(JSONRPCRequest) returns (JSONRPCResponse);
+  rpc HandleNotification(JSONRPCNotification) returns (Empty);
+  rpc HandleBatchRequest(JSONRPCBatchRequest) returns (JSONRPCBatchResponse);
+  
+  // Schema management
+  rpc RegisterInputSchema(RegisterInputSchemaRequest) returns (RegisterInputSchemaResponse);
+  rpc GetInputSchema(GetInputSchemaRequest) returns (InputSchema);
+  
+  // Resource management
+  rpc ListResources(ListResourcesRequest) returns (ListResourcesResult);
+  rpc ReadResource(ReadResourceRequest) returns (ReadResourceResult);
+  
+  // Tool management
+  rpc RegisterTool(RegisterToolRequest) returns (RegisterToolResponse);
+  rpc ListTools(ListToolsRequest) returns (ListToolsResponse);
+
+  // Prompt management
+  rpc RegisterPrompt(RegisterPromptRequest) returns (RegisterPromptResponse);
+  rpc GetPrompt(GetPromptRequest) returns (Prompt);
+  rpc ListPrompts(ListPromptsRequest) returns (ListPromptsResponse);
+  rpc UpdatePrompt(UpdatePromptRequest) returns (UpdatePromptResponse);
+  rpc DeletePrompt(DeletePromptRequest) returns (DeletePromptResponse);
+}
+
+// Registration related messages
+message RegisterRequest {
+  string client_id = 1;
+  ClientCapabilities capabilities = 2;
+  Implementation client_info = 3;
+}
+
+message RegisterResponse {
+  bool success = 1;
+  string session_id = 2;
+  ServerCapabilities capabilities = 3;
+  Implementation server_info = 4;
+}
+
+// Schema registration messages
+message RegisterInputSchemaRequest {
+  string tool_name = 1;
+  InputSchema schema = 2;
+}
+
+message RegisterInputSchemaResponse {
+  bool success = 1;
+  string schema_id = 2;
+}
+
+message GetInputSchemaRequest {
+  string tool_name = 1;
+}
+
+// Tool registration messages
+message RegisterToolRequest {
+  Tool tool = 1;
+}
+
+message RegisterToolResponse {
+  bool success = 1;
+  string tool_id = 2;
+}
+
+message ListToolsRequest {
+  PaginatedParams params = 1;
+}
+
+message ListToolsResponse {
+  repeated Tool tools = 1;
+  string next_cursor = 2;
+}
+
+// Prompt management messages
+message Prompt {
+  string name = 1;
+  string content = 2;
+  string description = 3;
+  ModelPreferences model_preferences = 4;
+  Annotations annotations = 5;
+  map<string, bytes> metadata = 6;
+}
+
+message RegisterPromptRequest {
+  Prompt prompt = 1;
+}
+
+message RegisterPromptResponse {
+  bool success = 1;
+  string prompt_id = 2;
+}
+
+message GetPromptRequest {
+  string name = 1;
+}
+
+message ListPromptsRequest {
+  PaginatedParams params = 1;
+  string filter = 2;
+}
+
+message ListPromptsResponse {
+  repeated Prompt prompts = 1;
+  string next_cursor = 2;
+}
+
+message UpdatePromptRequest {
+  string name = 1;
+  Prompt prompt = 2;
+}
+
+message UpdatePromptResponse {
+  bool success = 1;
+}
+
+message DeletePromptRequest {
+  string name = 1;
+}
+
+message DeletePromptResponse {
+  bool success = 1;
+}
+
+// Empty message for void responses
+message Empty {} 
