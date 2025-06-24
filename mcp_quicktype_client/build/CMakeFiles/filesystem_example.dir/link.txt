@@ -1,0 +1,1 @@
+/Library/Developer/CommandLineTools/usr/bin/c++  -isysroot /Library/Developer/CommandLineTools/SDKs/MacOSX14.4.sdk -Wl,-search_paths_first -Wl,-headerpad_max_install_names CMakeFiles/filesystem_example.dir/filesystem_example.cpp.o -o bin/filesystem_example  libmcp_client_lib.a -lpthread 

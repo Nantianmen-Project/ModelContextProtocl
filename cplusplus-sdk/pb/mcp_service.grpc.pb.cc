@@ -6,15 +6,19 @@
 #include "mcp_service.grpc.pb.h"
 
 #include <functional>
-#include <grpcpp/impl/codegen/async_stream.h>
-#include <grpcpp/impl/codegen/async_unary_call.h>
-#include <grpcpp/impl/codegen/channel_interface.h>
-#include <grpcpp/impl/codegen/client_unary_call.h>
-#include <grpcpp/impl/codegen/client_callback.h>
-#include <grpcpp/impl/codegen/method_handler_impl.h>
-#include <grpcpp/impl/codegen/rpc_service_method.h>
-#include <grpcpp/impl/codegen/service_type.h>
-#include <grpcpp/impl/codegen/sync_stream.h>
+#include <grpcpp/support/async_stream.h>
+#include <grpcpp/support/async_unary_call.h>
+#include <grpcpp/impl/channel_interface.h>
+#include <grpcpp/impl/client_unary_call.h>
+#include <grpcpp/support/client_callback.h>
+#include <grpcpp/support/message_allocator.h>
+#include <grpcpp/support/method_handler.h>
+#include <grpcpp/impl/rpc_service_method.h>
+#include <grpcpp/support/server_callback.h>
+#include <grpcpp/impl/codegen/server_callback_handlers.h>
+#include <grpcpp/server_context.h>
+#include <grpcpp/impl/service_type.h>
+#include <grpcpp/support/sync_stream.h>
 namespace mcp {
 
 static const char* MCPService_method_names[] = {
@@ -38,366 +42,558 @@ static const char* MCPService_method_names[] = {
 
 std::unique_ptr< MCPService::Stub> MCPService::NewStub(const std::shared_ptr< ::grpc::ChannelInterface>& channel, const ::grpc::StubOptions& options) {
   (void)options;
-  std::unique_ptr< MCPService::Stub> stub(new MCPService::Stub(channel));
+  std::unique_ptr< MCPService::Stub> stub(new MCPService::Stub(channel, options));
   return stub;
 }
 
-MCPService::Stub::Stub(const std::shared_ptr< ::grpc::ChannelInterface>& channel)
-  : channel_(channel), rpcmethod_Register_(MCPService_method_names[0], ::grpc::internal::RpcMethod::NORMAL_RPC, channel)
-  , rpcmethod_Initialize_(MCPService_method_names[1], ::grpc::internal::RpcMethod::NORMAL_RPC, channel)
-  , rpcmethod_HandleRequest_(MCPService_method_names[2], ::grpc::internal::RpcMethod::NORMAL_RPC, channel)
-  , rpcmethod_HandleNotification_(MCPService_method_names[3], ::grpc::internal::RpcMethod::NORMAL_RPC, channel)
-  , rpcmethod_HandleBatchRequest_(MCPService_method_names[4], ::grpc::internal::RpcMethod::NORMAL_RPC, channel)
-  , rpcmethod_RegisterInputSchema_(MCPService_method_names[5], ::grpc::internal::RpcMethod::NORMAL_RPC, channel)
-  , rpcmethod_GetInputSchema_(MCPService_method_names[6], ::grpc::internal::RpcMethod::NORMAL_RPC, channel)
-  , rpcmethod_ListResources_(MCPService_method_names[7], ::grpc::internal::RpcMethod::NORMAL_RPC, channel)
-  , rpcmethod_ReadResource_(MCPService_method_names[8], ::grpc::internal::RpcMethod::NORMAL_RPC, channel)
-  , rpcmethod_RegisterTool_(MCPService_method_names[9], ::grpc::internal::RpcMethod::NORMAL_RPC, channel)
-  , rpcmethod_ListTools_(MCPService_method_names[10], ::grpc::internal::RpcMethod::NORMAL_RPC, channel)
-  , rpcmethod_RegisterPrompt_(MCPService_method_names[11], ::grpc::internal::RpcMethod::NORMAL_RPC, channel)
-  , rpcmethod_GetPrompt_(MCPService_method_names[12], ::grpc::internal::RpcMethod::NORMAL_RPC, channel)
-  , rpcmethod_ListPrompts_(MCPService_method_names[13], ::grpc::internal::RpcMethod::NORMAL_RPC, channel)
-  , rpcmethod_UpdatePrompt_(MCPService_method_names[14], ::grpc::internal::RpcMethod::NORMAL_RPC, channel)
-  , rpcmethod_DeletePrompt_(MCPService_method_names[15], ::grpc::internal::RpcMethod::NORMAL_RPC, channel)
+MCPService::Stub::Stub(const std::shared_ptr< ::grpc::ChannelInterface>& channel, const ::grpc::StubOptions& options)
+  : channel_(channel), rpcmethod_Register_(MCPService_method_names[0], options.suffix_for_stats(),::grpc::internal::RpcMethod::NORMAL_RPC, channel)
+  , rpcmethod_Initialize_(MCPService_method_names[1], options.suffix_for_stats(),::grpc::internal::RpcMethod::NORMAL_RPC, channel)
+  , rpcmethod_HandleRequest_(MCPService_method_names[2], options.suffix_for_stats(),::grpc::internal::RpcMethod::NORMAL_RPC, channel)
+  , rpcmethod_HandleNotification_(MCPService_method_names[3], options.suffix_for_stats(),::grpc::internal::RpcMethod::NORMAL_RPC, channel)
+  , rpcmethod_HandleBatchRequest_(MCPService_method_names[4], options.suffix_for_stats(),::grpc::internal::RpcMethod::NORMAL_RPC, channel)
+  , rpcmethod_RegisterInputSchema_(MCPService_method_names[5], options.suffix_for_stats(),::grpc::internal::RpcMethod::NORMAL_RPC, channel)
+  , rpcmethod_GetInputSchema_(MCPService_method_names[6], options.suffix_for_stats(),::grpc::internal::RpcMethod::NORMAL_RPC, channel)
+  , rpcmethod_ListResources_(MCPService_method_names[7], options.suffix_for_stats(),::grpc::internal::RpcMethod::NORMAL_RPC, channel)
+  , rpcmethod_ReadResource_(MCPService_method_names[8], options.suffix_for_stats(),::grpc::internal::RpcMethod::NORMAL_RPC, channel)
+  , rpcmethod_RegisterTool_(MCPService_method_names[9], options.suffix_for_stats(),::grpc::internal::RpcMethod::NORMAL_RPC, channel)
+  , rpcmethod_ListTools_(MCPService_method_names[10], options.suffix_for_stats(),::grpc::internal::RpcMethod::NORMAL_RPC, channel)
+  , rpcmethod_RegisterPrompt_(MCPService_method_names[11], options.suffix_for_stats(),::grpc::internal::RpcMethod::NORMAL_RPC, channel)
+  , rpcmethod_GetPrompt_(MCPService_method_names[12], options.suffix_for_stats(),::grpc::internal::RpcMethod::NORMAL_RPC, channel)
+  , rpcmethod_ListPrompts_(MCPService_method_names[13], options.suffix_for_stats(),::grpc::internal::RpcMethod::NORMAL_RPC, channel)
+  , rpcmethod_UpdatePrompt_(MCPService_method_names[14], options.suffix_for_stats(),::grpc::internal::RpcMethod::NORMAL_RPC, channel)
+  , rpcmethod_DeletePrompt_(MCPService_method_names[15], options.suffix_for_stats(),::grpc::internal::RpcMethod::NORMAL_RPC, channel)
   {}
 
 ::grpc::Status MCPService::Stub::Register(::grpc::ClientContext* context, const ::mcp::RegisterRequest& request, ::mcp::RegisterResponse* response) {
-  return ::grpc::internal::BlockingUnaryCall(channel_.get(), rpcmethod_Register_, context, request, response);
+  return ::grpc::internal::BlockingUnaryCall< ::mcp::RegisterRequest, ::mcp::RegisterResponse, ::grpc::protobuf::MessageLite, ::grpc::protobuf::MessageLite>(channel_.get(), rpcmethod_Register_, context, request, response);
 }
 
-void MCPService::Stub::experimental_async::Register(::grpc::ClientContext* context, const ::mcp::RegisterRequest* request, ::mcp::RegisterResponse* response, std::function<void(::grpc::Status)> f) {
-  return ::grpc::internal::CallbackUnaryCall(stub_->channel_.get(), stub_->rpcmethod_Register_, context, request, response, std::move(f));
+void MCPService::Stub::async::Register(::grpc::ClientContext* context, const ::mcp::RegisterRequest* request, ::mcp::RegisterResponse* response, std::function<void(::grpc::Status)> f) {
+  ::grpc::internal::CallbackUnaryCall< ::mcp::RegisterRequest, ::mcp::RegisterResponse, ::grpc::protobuf::MessageLite, ::grpc::protobuf::MessageLite>(stub_->channel_.get(), stub_->rpcmethod_Register_, context, request, response, std::move(f));
 }
 
-::grpc::ClientAsyncResponseReader< ::mcp::RegisterResponse>* MCPService::Stub::AsyncRegisterRaw(::grpc::ClientContext* context, const ::mcp::RegisterRequest& request, ::grpc::CompletionQueue* cq) {
-  return ::grpc::internal::ClientAsyncResponseReaderFactory< ::mcp::RegisterResponse>::Create(channel_.get(), cq, rpcmethod_Register_, context, request, true);
+void MCPService::Stub::async::Register(::grpc::ClientContext* context, const ::mcp::RegisterRequest* request, ::mcp::RegisterResponse* response, ::grpc::ClientUnaryReactor* reactor) {
+  ::grpc::internal::ClientCallbackUnaryFactory::Create< ::grpc::protobuf::MessageLite, ::grpc::protobuf::MessageLite>(stub_->channel_.get(), stub_->rpcmethod_Register_, context, request, response, reactor);
 }
 
 ::grpc::ClientAsyncResponseReader< ::mcp::RegisterResponse>* MCPService::Stub::PrepareAsyncRegisterRaw(::grpc::ClientContext* context, const ::mcp::RegisterRequest& request, ::grpc::CompletionQueue* cq) {
-  return ::grpc::internal::ClientAsyncResponseReaderFactory< ::mcp::RegisterResponse>::Create(channel_.get(), cq, rpcmethod_Register_, context, request, false);
+  return ::grpc::internal::ClientAsyncResponseReaderHelper::Create< ::mcp::RegisterResponse, ::mcp::RegisterRequest, ::grpc::protobuf::MessageLite, ::grpc::protobuf::MessageLite>(channel_.get(), cq, rpcmethod_Register_, context, request);
+}
+
+::grpc::ClientAsyncResponseReader< ::mcp::RegisterResponse>* MCPService::Stub::AsyncRegisterRaw(::grpc::ClientContext* context, const ::mcp::RegisterRequest& request, ::grpc::CompletionQueue* cq) {
+  auto* result =
+    this->PrepareAsyncRegisterRaw(context, request, cq);
+  result->StartCall();
+  return result;
 }
 
 ::grpc::Status MCPService::Stub::Initialize(::grpc::ClientContext* context, const ::mcp::InitializeRequest& request, ::mcp::InitializeResult* response) {
-  return ::grpc::internal::BlockingUnaryCall(channel_.get(), rpcmethod_Initialize_, context, request, response);
+  return ::grpc::internal::BlockingUnaryCall< ::mcp::InitializeRequest, ::mcp::InitializeResult, ::grpc::protobuf::MessageLite, ::grpc::protobuf::MessageLite>(channel_.get(), rpcmethod_Initialize_, context, request, response);
 }
 
-void MCPService::Stub::experimental_async::Initialize(::grpc::ClientContext* context, const ::mcp::InitializeRequest* request, ::mcp::InitializeResult* response, std::function<void(::grpc::Status)> f) {
-  return ::grpc::internal::CallbackUnaryCall(stub_->channel_.get(), stub_->rpcmethod_Initialize_, context, request, response, std::move(f));
+void MCPService::Stub::async::Initialize(::grpc::ClientContext* context, const ::mcp::InitializeRequest* request, ::mcp::InitializeResult* response, std::function<void(::grpc::Status)> f) {
+  ::grpc::internal::CallbackUnaryCall< ::mcp::InitializeRequest, ::mcp::InitializeResult, ::grpc::protobuf::MessageLite, ::grpc::protobuf::MessageLite>(stub_->channel_.get(), stub_->rpcmethod_Initialize_, context, request, response, std::move(f));
 }
 
-::grpc::ClientAsyncResponseReader< ::mcp::InitializeResult>* MCPService::Stub::AsyncInitializeRaw(::grpc::ClientContext* context, const ::mcp::InitializeRequest& request, ::grpc::CompletionQueue* cq) {
-  return ::grpc::internal::ClientAsyncResponseReaderFactory< ::mcp::InitializeResult>::Create(channel_.get(), cq, rpcmethod_Initialize_, context, request, true);
+void MCPService::Stub::async::Initialize(::grpc::ClientContext* context, const ::mcp::InitializeRequest* request, ::mcp::InitializeResult* response, ::grpc::ClientUnaryReactor* reactor) {
+  ::grpc::internal::ClientCallbackUnaryFactory::Create< ::grpc::protobuf::MessageLite, ::grpc::protobuf::MessageLite>(stub_->channel_.get(), stub_->rpcmethod_Initialize_, context, request, response, reactor);
 }
 
 ::grpc::ClientAsyncResponseReader< ::mcp::InitializeResult>* MCPService::Stub::PrepareAsyncInitializeRaw(::grpc::ClientContext* context, const ::mcp::InitializeRequest& request, ::grpc::CompletionQueue* cq) {
-  return ::grpc::internal::ClientAsyncResponseReaderFactory< ::mcp::InitializeResult>::Create(channel_.get(), cq, rpcmethod_Initialize_, context, request, false);
+  return ::grpc::internal::ClientAsyncResponseReaderHelper::Create< ::mcp::InitializeResult, ::mcp::InitializeRequest, ::grpc::protobuf::MessageLite, ::grpc::protobuf::MessageLite>(channel_.get(), cq, rpcmethod_Initialize_, context, request);
+}
+
+::grpc::ClientAsyncResponseReader< ::mcp::InitializeResult>* MCPService::Stub::AsyncInitializeRaw(::grpc::ClientContext* context, const ::mcp::InitializeRequest& request, ::grpc::CompletionQueue* cq) {
+  auto* result =
+    this->PrepareAsyncInitializeRaw(context, request, cq);
+  result->StartCall();
+  return result;
 }
 
 ::grpc::Status MCPService::Stub::HandleRequest(::grpc::ClientContext* context, const ::mcp::JSONRPCRequest& request, ::mcp::JSONRPCResponse* response) {
-  return ::grpc::internal::BlockingUnaryCall(channel_.get(), rpcmethod_HandleRequest_, context, request, response);
+  return ::grpc::internal::BlockingUnaryCall< ::mcp::JSONRPCRequest, ::mcp::JSONRPCResponse, ::grpc::protobuf::MessageLite, ::grpc::protobuf::MessageLite>(channel_.get(), rpcmethod_HandleRequest_, context, request, response);
 }
 
-void MCPService::Stub::experimental_async::HandleRequest(::grpc::ClientContext* context, const ::mcp::JSONRPCRequest* request, ::mcp::JSONRPCResponse* response, std::function<void(::grpc::Status)> f) {
-  return ::grpc::internal::CallbackUnaryCall(stub_->channel_.get(), stub_->rpcmethod_HandleRequest_, context, request, response, std::move(f));
+void MCPService::Stub::async::HandleRequest(::grpc::ClientContext* context, const ::mcp::JSONRPCRequest* request, ::mcp::JSONRPCResponse* response, std::function<void(::grpc::Status)> f) {
+  ::grpc::internal::CallbackUnaryCall< ::mcp::JSONRPCRequest, ::mcp::JSONRPCResponse, ::grpc::protobuf::MessageLite, ::grpc::protobuf::MessageLite>(stub_->channel_.get(), stub_->rpcmethod_HandleRequest_, context, request, response, std::move(f));
 }
 
-::grpc::ClientAsyncResponseReader< ::mcp::JSONRPCResponse>* MCPService::Stub::AsyncHandleRequestRaw(::grpc::ClientContext* context, const ::mcp::JSONRPCRequest& request, ::grpc::CompletionQueue* cq) {
-  return ::grpc::internal::ClientAsyncResponseReaderFactory< ::mcp::JSONRPCResponse>::Create(channel_.get(), cq, rpcmethod_HandleRequest_, context, request, true);
+void MCPService::Stub::async::HandleRequest(::grpc::ClientContext* context, const ::mcp::JSONRPCRequest* request, ::mcp::JSONRPCResponse* response, ::grpc::ClientUnaryReactor* reactor) {
+  ::grpc::internal::ClientCallbackUnaryFactory::Create< ::grpc::protobuf::MessageLite, ::grpc::protobuf::MessageLite>(stub_->channel_.get(), stub_->rpcmethod_HandleRequest_, context, request, response, reactor);
 }
 
 ::grpc::ClientAsyncResponseReader< ::mcp::JSONRPCResponse>* MCPService::Stub::PrepareAsyncHandleRequestRaw(::grpc::ClientContext* context, const ::mcp::JSONRPCRequest& request, ::grpc::CompletionQueue* cq) {
-  return ::grpc::internal::ClientAsyncResponseReaderFactory< ::mcp::JSONRPCResponse>::Create(channel_.get(), cq, rpcmethod_HandleRequest_, context, request, false);
+  return ::grpc::internal::ClientAsyncResponseReaderHelper::Create< ::mcp::JSONRPCResponse, ::mcp::JSONRPCRequest, ::grpc::protobuf::MessageLite, ::grpc::protobuf::MessageLite>(channel_.get(), cq, rpcmethod_HandleRequest_, context, request);
+}
+
+::grpc::ClientAsyncResponseReader< ::mcp::JSONRPCResponse>* MCPService::Stub::AsyncHandleRequestRaw(::grpc::ClientContext* context, const ::mcp::JSONRPCRequest& request, ::grpc::CompletionQueue* cq) {
+  auto* result =
+    this->PrepareAsyncHandleRequestRaw(context, request, cq);
+  result->StartCall();
+  return result;
 }
 
 ::grpc::Status MCPService::Stub::HandleNotification(::grpc::ClientContext* context, const ::mcp::JSONRPCNotification& request, ::mcp::Empty* response) {
-  return ::grpc::internal::BlockingUnaryCall(channel_.get(), rpcmethod_HandleNotification_, context, request, response);
+  return ::grpc::internal::BlockingUnaryCall< ::mcp::JSONRPCNotification, ::mcp::Empty, ::grpc::protobuf::MessageLite, ::grpc::protobuf::MessageLite>(channel_.get(), rpcmethod_HandleNotification_, context, request, response);
 }
 
-void MCPService::Stub::experimental_async::HandleNotification(::grpc::ClientContext* context, const ::mcp::JSONRPCNotification* request, ::mcp::Empty* response, std::function<void(::grpc::Status)> f) {
-  return ::grpc::internal::CallbackUnaryCall(stub_->channel_.get(), stub_->rpcmethod_HandleNotification_, context, request, response, std::move(f));
+void MCPService::Stub::async::HandleNotification(::grpc::ClientContext* context, const ::mcp::JSONRPCNotification* request, ::mcp::Empty* response, std::function<void(::grpc::Status)> f) {
+  ::grpc::internal::CallbackUnaryCall< ::mcp::JSONRPCNotification, ::mcp::Empty, ::grpc::protobuf::MessageLite, ::grpc::protobuf::MessageLite>(stub_->channel_.get(), stub_->rpcmethod_HandleNotification_, context, request, response, std::move(f));
 }
 
-::grpc::ClientAsyncResponseReader< ::mcp::Empty>* MCPService::Stub::AsyncHandleNotificationRaw(::grpc::ClientContext* context, const ::mcp::JSONRPCNotification& request, ::grpc::CompletionQueue* cq) {
-  return ::grpc::internal::ClientAsyncResponseReaderFactory< ::mcp::Empty>::Create(channel_.get(), cq, rpcmethod_HandleNotification_, context, request, true);
+void MCPService::Stub::async::HandleNotification(::grpc::ClientContext* context, const ::mcp::JSONRPCNotification* request, ::mcp::Empty* response, ::grpc::ClientUnaryReactor* reactor) {
+  ::grpc::internal::ClientCallbackUnaryFactory::Create< ::grpc::protobuf::MessageLite, ::grpc::protobuf::MessageLite>(stub_->channel_.get(), stub_->rpcmethod_HandleNotification_, context, request, response, reactor);
 }
 
 ::grpc::ClientAsyncResponseReader< ::mcp::Empty>* MCPService::Stub::PrepareAsyncHandleNotificationRaw(::grpc::ClientContext* context, const ::mcp::JSONRPCNotification& request, ::grpc::CompletionQueue* cq) {
-  return ::grpc::internal::ClientAsyncResponseReaderFactory< ::mcp::Empty>::Create(channel_.get(), cq, rpcmethod_HandleNotification_, context, request, false);
+  return ::grpc::internal::ClientAsyncResponseReaderHelper::Create< ::mcp::Empty, ::mcp::JSONRPCNotification, ::grpc::protobuf::MessageLite, ::grpc::protobuf::MessageLite>(channel_.get(), cq, rpcmethod_HandleNotification_, context, request);
+}
+
+::grpc::ClientAsyncResponseReader< ::mcp::Empty>* MCPService::Stub::AsyncHandleNotificationRaw(::grpc::ClientContext* context, const ::mcp::JSONRPCNotification& request, ::grpc::CompletionQueue* cq) {
+  auto* result =
+    this->PrepareAsyncHandleNotificationRaw(context, request, cq);
+  result->StartCall();
+  return result;
 }
 
 ::grpc::Status MCPService::Stub::HandleBatchRequest(::grpc::ClientContext* context, const ::mcp::JSONRPCBatchRequest& request, ::mcp::JSONRPCBatchResponse* response) {
-  return ::grpc::internal::BlockingUnaryCall(channel_.get(), rpcmethod_HandleBatchRequest_, context, request, response);
+  return ::grpc::internal::BlockingUnaryCall< ::mcp::JSONRPCBatchRequest, ::mcp::JSONRPCBatchResponse, ::grpc::protobuf::MessageLite, ::grpc::protobuf::MessageLite>(channel_.get(), rpcmethod_HandleBatchRequest_, context, request, response);
 }
 
-void MCPService::Stub::experimental_async::HandleBatchRequest(::grpc::ClientContext* context, const ::mcp::JSONRPCBatchRequest* request, ::mcp::JSONRPCBatchResponse* response, std::function<void(::grpc::Status)> f) {
-  return ::grpc::internal::CallbackUnaryCall(stub_->channel_.get(), stub_->rpcmethod_HandleBatchRequest_, context, request, response, std::move(f));
+void MCPService::Stub::async::HandleBatchRequest(::grpc::ClientContext* context, const ::mcp::JSONRPCBatchRequest* request, ::mcp::JSONRPCBatchResponse* response, std::function<void(::grpc::Status)> f) {
+  ::grpc::internal::CallbackUnaryCall< ::mcp::JSONRPCBatchRequest, ::mcp::JSONRPCBatchResponse, ::grpc::protobuf::MessageLite, ::grpc::protobuf::MessageLite>(stub_->channel_.get(), stub_->rpcmethod_HandleBatchRequest_, context, request, response, std::move(f));
 }
 
-::grpc::ClientAsyncResponseReader< ::mcp::JSONRPCBatchResponse>* MCPService::Stub::AsyncHandleBatchRequestRaw(::grpc::ClientContext* context, const ::mcp::JSONRPCBatchRequest& request, ::grpc::CompletionQueue* cq) {
-  return ::grpc::internal::ClientAsyncResponseReaderFactory< ::mcp::JSONRPCBatchResponse>::Create(channel_.get(), cq, rpcmethod_HandleBatchRequest_, context, request, true);
+void MCPService::Stub::async::HandleBatchRequest(::grpc::ClientContext* context, const ::mcp::JSONRPCBatchRequest* request, ::mcp::JSONRPCBatchResponse* response, ::grpc::ClientUnaryReactor* reactor) {
+  ::grpc::internal::ClientCallbackUnaryFactory::Create< ::grpc::protobuf::MessageLite, ::grpc::protobuf::MessageLite>(stub_->channel_.get(), stub_->rpcmethod_HandleBatchRequest_, context, request, response, reactor);
 }
 
 ::grpc::ClientAsyncResponseReader< ::mcp::JSONRPCBatchResponse>* MCPService::Stub::PrepareAsyncHandleBatchRequestRaw(::grpc::ClientContext* context, const ::mcp::JSONRPCBatchRequest& request, ::grpc::CompletionQueue* cq) {
-  return ::grpc::internal::ClientAsyncResponseReaderFactory< ::mcp::JSONRPCBatchResponse>::Create(channel_.get(), cq, rpcmethod_HandleBatchRequest_, context, request, false);
+  return ::grpc::internal::ClientAsyncResponseReaderHelper::Create< ::mcp::JSONRPCBatchResponse, ::mcp::JSONRPCBatchRequest, ::grpc::protobuf::MessageLite, ::grpc::protobuf::MessageLite>(channel_.get(), cq, rpcmethod_HandleBatchRequest_, context, request);
+}
+
+::grpc::ClientAsyncResponseReader< ::mcp::JSONRPCBatchResponse>* MCPService::Stub::AsyncHandleBatchRequestRaw(::grpc::ClientContext* context, const ::mcp::JSONRPCBatchRequest& request, ::grpc::CompletionQueue* cq) {
+  auto* result =
+    this->PrepareAsyncHandleBatchRequestRaw(context, request, cq);
+  result->StartCall();
+  return result;
 }
 
 ::grpc::Status MCPService::Stub::RegisterInputSchema(::grpc::ClientContext* context, const ::mcp::RegisterInputSchemaRequest& request, ::mcp::RegisterInputSchemaResponse* response) {
-  return ::grpc::internal::BlockingUnaryCall(channel_.get(), rpcmethod_RegisterInputSchema_, context, request, response);
+  return ::grpc::internal::BlockingUnaryCall< ::mcp::RegisterInputSchemaRequest, ::mcp::RegisterInputSchemaResponse, ::grpc::protobuf::MessageLite, ::grpc::protobuf::MessageLite>(channel_.get(), rpcmethod_RegisterInputSchema_, context, request, response);
 }
 
-void MCPService::Stub::experimental_async::RegisterInputSchema(::grpc::ClientContext* context, const ::mcp::RegisterInputSchemaRequest* request, ::mcp::RegisterInputSchemaResponse* response, std::function<void(::grpc::Status)> f) {
-  return ::grpc::internal::CallbackUnaryCall(stub_->channel_.get(), stub_->rpcmethod_RegisterInputSchema_, context, request, response, std::move(f));
+void MCPService::Stub::async::RegisterInputSchema(::grpc::ClientContext* context, const ::mcp::RegisterInputSchemaRequest* request, ::mcp::RegisterInputSchemaResponse* response, std::function<void(::grpc::Status)> f) {
+  ::grpc::internal::CallbackUnaryCall< ::mcp::RegisterInputSchemaRequest, ::mcp::RegisterInputSchemaResponse, ::grpc::protobuf::MessageLite, ::grpc::protobuf::MessageLite>(stub_->channel_.get(), stub_->rpcmethod_RegisterInputSchema_, context, request, response, std::move(f));
 }
 
-::grpc::ClientAsyncResponseReader< ::mcp::RegisterInputSchemaResponse>* MCPService::Stub::AsyncRegisterInputSchemaRaw(::grpc::ClientContext* context, const ::mcp::RegisterInputSchemaRequest& request, ::grpc::CompletionQueue* cq) {
-  return ::grpc::internal::ClientAsyncResponseReaderFactory< ::mcp::RegisterInputSchemaResponse>::Create(channel_.get(), cq, rpcmethod_RegisterInputSchema_, context, request, true);
+void MCPService::Stub::async::RegisterInputSchema(::grpc::ClientContext* context, const ::mcp::RegisterInputSchemaRequest* request, ::mcp::RegisterInputSchemaResponse* response, ::grpc::ClientUnaryReactor* reactor) {
+  ::grpc::internal::ClientCallbackUnaryFactory::Create< ::grpc::protobuf::MessageLite, ::grpc::protobuf::MessageLite>(stub_->channel_.get(), stub_->rpcmethod_RegisterInputSchema_, context, request, response, reactor);
 }
 
 ::grpc::ClientAsyncResponseReader< ::mcp::RegisterInputSchemaResponse>* MCPService::Stub::PrepareAsyncRegisterInputSchemaRaw(::grpc::ClientContext* context, const ::mcp::RegisterInputSchemaRequest& request, ::grpc::CompletionQueue* cq) {
-  return ::grpc::internal::ClientAsyncResponseReaderFactory< ::mcp::RegisterInputSchemaResponse>::Create(channel_.get(), cq, rpcmethod_RegisterInputSchema_, context, request, false);
+  return ::grpc::internal::ClientAsyncResponseReaderHelper::Create< ::mcp::RegisterInputSchemaResponse, ::mcp::RegisterInputSchemaRequest, ::grpc::protobuf::MessageLite, ::grpc::protobuf::MessageLite>(channel_.get(), cq, rpcmethod_RegisterInputSchema_, context, request);
+}
+
+::grpc::ClientAsyncResponseReader< ::mcp::RegisterInputSchemaResponse>* MCPService::Stub::AsyncRegisterInputSchemaRaw(::grpc::ClientContext* context, const ::mcp::RegisterInputSchemaRequest& request, ::grpc::CompletionQueue* cq) {
+  auto* result =
+    this->PrepareAsyncRegisterInputSchemaRaw(context, request, cq);
+  result->StartCall();
+  return result;
 }
 
 ::grpc::Status MCPService::Stub::GetInputSchema(::grpc::ClientContext* context, const ::mcp::GetInputSchemaRequest& request, ::mcp::InputSchema* response) {
-  return ::grpc::internal::BlockingUnaryCall(channel_.get(), rpcmethod_GetInputSchema_, context, request, response);
+  return ::grpc::internal::BlockingUnaryCall< ::mcp::GetInputSchemaRequest, ::mcp::InputSchema, ::grpc::protobuf::MessageLite, ::grpc::protobuf::MessageLite>(channel_.get(), rpcmethod_GetInputSchema_, context, request, response);
 }
 
-void MCPService::Stub::experimental_async::GetInputSchema(::grpc::ClientContext* context, const ::mcp::GetInputSchemaRequest* request, ::mcp::InputSchema* response, std::function<void(::grpc::Status)> f) {
-  return ::grpc::internal::CallbackUnaryCall(stub_->channel_.get(), stub_->rpcmethod_GetInputSchema_, context, request, response, std::move(f));
+void MCPService::Stub::async::GetInputSchema(::grpc::ClientContext* context, const ::mcp::GetInputSchemaRequest* request, ::mcp::InputSchema* response, std::function<void(::grpc::Status)> f) {
+  ::grpc::internal::CallbackUnaryCall< ::mcp::GetInputSchemaRequest, ::mcp::InputSchema, ::grpc::protobuf::MessageLite, ::grpc::protobuf::MessageLite>(stub_->channel_.get(), stub_->rpcmethod_GetInputSchema_, context, request, response, std::move(f));
 }
 
-::grpc::ClientAsyncResponseReader< ::mcp::InputSchema>* MCPService::Stub::AsyncGetInputSchemaRaw(::grpc::ClientContext* context, const ::mcp::GetInputSchemaRequest& request, ::grpc::CompletionQueue* cq) {
-  return ::grpc::internal::ClientAsyncResponseReaderFactory< ::mcp::InputSchema>::Create(channel_.get(), cq, rpcmethod_GetInputSchema_, context, request, true);
+void MCPService::Stub::async::GetInputSchema(::grpc::ClientContext* context, const ::mcp::GetInputSchemaRequest* request, ::mcp::InputSchema* response, ::grpc::ClientUnaryReactor* reactor) {
+  ::grpc::internal::ClientCallbackUnaryFactory::Create< ::grpc::protobuf::MessageLite, ::grpc::protobuf::MessageLite>(stub_->channel_.get(), stub_->rpcmethod_GetInputSchema_, context, request, response, reactor);
 }
 
 ::grpc::ClientAsyncResponseReader< ::mcp::InputSchema>* MCPService::Stub::PrepareAsyncGetInputSchemaRaw(::grpc::ClientContext* context, const ::mcp::GetInputSchemaRequest& request, ::grpc::CompletionQueue* cq) {
-  return ::grpc::internal::ClientAsyncResponseReaderFactory< ::mcp::InputSchema>::Create(channel_.get(), cq, rpcmethod_GetInputSchema_, context, request, false);
+  return ::grpc::internal::ClientAsyncResponseReaderHelper::Create< ::mcp::InputSchema, ::mcp::GetInputSchemaRequest, ::grpc::protobuf::MessageLite, ::grpc::protobuf::MessageLite>(channel_.get(), cq, rpcmethod_GetInputSchema_, context, request);
+}
+
+::grpc::ClientAsyncResponseReader< ::mcp::InputSchema>* MCPService::Stub::AsyncGetInputSchemaRaw(::grpc::ClientContext* context, const ::mcp::GetInputSchemaRequest& request, ::grpc::CompletionQueue* cq) {
+  auto* result =
+    this->PrepareAsyncGetInputSchemaRaw(context, request, cq);
+  result->StartCall();
+  return result;
 }
 
 ::grpc::Status MCPService::Stub::ListResources(::grpc::ClientContext* context, const ::mcp::ListResourcesRequest& request, ::mcp::ListResourcesResult* response) {
-  return ::grpc::internal::BlockingUnaryCall(channel_.get(), rpcmethod_ListResources_, context, request, response);
+  return ::grpc::internal::BlockingUnaryCall< ::mcp::ListResourcesRequest, ::mcp::ListResourcesResult, ::grpc::protobuf::MessageLite, ::grpc::protobuf::MessageLite>(channel_.get(), rpcmethod_ListResources_, context, request, response);
 }
 
-void MCPService::Stub::experimental_async::ListResources(::grpc::ClientContext* context, const ::mcp::ListResourcesRequest* request, ::mcp::ListResourcesResult* response, std::function<void(::grpc::Status)> f) {
-  return ::grpc::internal::CallbackUnaryCall(stub_->channel_.get(), stub_->rpcmethod_ListResources_, context, request, response, std::move(f));
+void MCPService::Stub::async::ListResources(::grpc::ClientContext* context, const ::mcp::ListResourcesRequest* request, ::mcp::ListResourcesResult* response, std::function<void(::grpc::Status)> f) {
+  ::grpc::internal::CallbackUnaryCall< ::mcp::ListResourcesRequest, ::mcp::ListResourcesResult, ::grpc::protobuf::MessageLite, ::grpc::protobuf::MessageLite>(stub_->channel_.get(), stub_->rpcmethod_ListResources_, context, request, response, std::move(f));
 }
 
-::grpc::ClientAsyncResponseReader< ::mcp::ListResourcesResult>* MCPService::Stub::AsyncListResourcesRaw(::grpc::ClientContext* context, const ::mcp::ListResourcesRequest& request, ::grpc::CompletionQueue* cq) {
-  return ::grpc::internal::ClientAsyncResponseReaderFactory< ::mcp::ListResourcesResult>::Create(channel_.get(), cq, rpcmethod_ListResources_, context, request, true);
+void MCPService::Stub::async::ListResources(::grpc::ClientContext* context, const ::mcp::ListResourcesRequest* request, ::mcp::ListResourcesResult* response, ::grpc::ClientUnaryReactor* reactor) {
+  ::grpc::internal::ClientCallbackUnaryFactory::Create< ::grpc::protobuf::MessageLite, ::grpc::protobuf::MessageLite>(stub_->channel_.get(), stub_->rpcmethod_ListResources_, context, request, response, reactor);
 }
 
 ::grpc::ClientAsyncResponseReader< ::mcp::ListResourcesResult>* MCPService::Stub::PrepareAsyncListResourcesRaw(::grpc::ClientContext* context, const ::mcp::ListResourcesRequest& request, ::grpc::CompletionQueue* cq) {
-  return ::grpc::internal::ClientAsyncResponseReaderFactory< ::mcp::ListResourcesResult>::Create(channel_.get(), cq, rpcmethod_ListResources_, context, request, false);
+  return ::grpc::internal::ClientAsyncResponseReaderHelper::Create< ::mcp::ListResourcesResult, ::mcp::ListResourcesRequest, ::grpc::protobuf::MessageLite, ::grpc::protobuf::MessageLite>(channel_.get(), cq, rpcmethod_ListResources_, context, request);
+}
+
+::grpc::ClientAsyncResponseReader< ::mcp::ListResourcesResult>* MCPService::Stub::AsyncListResourcesRaw(::grpc::ClientContext* context, const ::mcp::ListResourcesRequest& request, ::grpc::CompletionQueue* cq) {
+  auto* result =
+    this->PrepareAsyncListResourcesRaw(context, request, cq);
+  result->StartCall();
+  return result;
 }
 
 ::grpc::Status MCPService::Stub::ReadResource(::grpc::ClientContext* context, const ::mcp::ReadResourceRequest& request, ::mcp::ReadResourceResult* response) {
-  return ::grpc::internal::BlockingUnaryCall(channel_.get(), rpcmethod_ReadResource_, context, request, response);
+  return ::grpc::internal::BlockingUnaryCall< ::mcp::ReadResourceRequest, ::mcp::ReadResourceResult, ::grpc::protobuf::MessageLite, ::grpc::protobuf::MessageLite>(channel_.get(), rpcmethod_ReadResource_, context, request, response);
 }
 
-void MCPService::Stub::experimental_async::ReadResource(::grpc::ClientContext* context, const ::mcp::ReadResourceRequest* request, ::mcp::ReadResourceResult* response, std::function<void(::grpc::Status)> f) {
-  return ::grpc::internal::CallbackUnaryCall(stub_->channel_.get(), stub_->rpcmethod_ReadResource_, context, request, response, std::move(f));
+void MCPService::Stub::async::ReadResource(::grpc::ClientContext* context, const ::mcp::ReadResourceRequest* request, ::mcp::ReadResourceResult* response, std::function<void(::grpc::Status)> f) {
+  ::grpc::internal::CallbackUnaryCall< ::mcp::ReadResourceRequest, ::mcp::ReadResourceResult, ::grpc::protobuf::MessageLite, ::grpc::protobuf::MessageLite>(stub_->channel_.get(), stub_->rpcmethod_ReadResource_, context, request, response, std::move(f));
 }
 
-::grpc::ClientAsyncResponseReader< ::mcp::ReadResourceResult>* MCPService::Stub::AsyncReadResourceRaw(::grpc::ClientContext* context, const ::mcp::ReadResourceRequest& request, ::grpc::CompletionQueue* cq) {
-  return ::grpc::internal::ClientAsyncResponseReaderFactory< ::mcp::ReadResourceResult>::Create(channel_.get(), cq, rpcmethod_ReadResource_, context, request, true);
+void MCPService::Stub::async::ReadResource(::grpc::ClientContext* context, const ::mcp::ReadResourceRequest* request, ::mcp::ReadResourceResult* response, ::grpc::ClientUnaryReactor* reactor) {
+  ::grpc::internal::ClientCallbackUnaryFactory::Create< ::grpc::protobuf::MessageLite, ::grpc::protobuf::MessageLite>(stub_->channel_.get(), stub_->rpcmethod_ReadResource_, context, request, response, reactor);
 }
 
 ::grpc::ClientAsyncResponseReader< ::mcp::ReadResourceResult>* MCPService::Stub::PrepareAsyncReadResourceRaw(::grpc::ClientContext* context, const ::mcp::ReadResourceRequest& request, ::grpc::CompletionQueue* cq) {
-  return ::grpc::internal::ClientAsyncResponseReaderFactory< ::mcp::ReadResourceResult>::Create(channel_.get(), cq, rpcmethod_ReadResource_, context, request, false);
+  return ::grpc::internal::ClientAsyncResponseReaderHelper::Create< ::mcp::ReadResourceResult, ::mcp::ReadResourceRequest, ::grpc::protobuf::MessageLite, ::grpc::protobuf::MessageLite>(channel_.get(), cq, rpcmethod_ReadResource_, context, request);
+}
+
+::grpc::ClientAsyncResponseReader< ::mcp::ReadResourceResult>* MCPService::Stub::AsyncReadResourceRaw(::grpc::ClientContext* context, const ::mcp::ReadResourceRequest& request, ::grpc::CompletionQueue* cq) {
+  auto* result =
+    this->PrepareAsyncReadResourceRaw(context, request, cq);
+  result->StartCall();
+  return result;
 }
 
 ::grpc::Status MCPService::Stub::RegisterTool(::grpc::ClientContext* context, const ::mcp::RegisterToolRequest& request, ::mcp::RegisterToolResponse* response) {
-  return ::grpc::internal::BlockingUnaryCall(channel_.get(), rpcmethod_RegisterTool_, context, request, response);
+  return ::grpc::internal::BlockingUnaryCall< ::mcp::RegisterToolRequest, ::mcp::RegisterToolResponse, ::grpc::protobuf::MessageLite, ::grpc::protobuf::MessageLite>(channel_.get(), rpcmethod_RegisterTool_, context, request, response);
 }
 
-void MCPService::Stub::experimental_async::RegisterTool(::grpc::ClientContext* context, const ::mcp::RegisterToolRequest* request, ::mcp::RegisterToolResponse* response, std::function<void(::grpc::Status)> f) {
-  return ::grpc::internal::CallbackUnaryCall(stub_->channel_.get(), stub_->rpcmethod_RegisterTool_, context, request, response, std::move(f));
+void MCPService::Stub::async::RegisterTool(::grpc::ClientContext* context, const ::mcp::RegisterToolRequest* request, ::mcp::RegisterToolResponse* response, std::function<void(::grpc::Status)> f) {
+  ::grpc::internal::CallbackUnaryCall< ::mcp::RegisterToolRequest, ::mcp::RegisterToolResponse, ::grpc::protobuf::MessageLite, ::grpc::protobuf::MessageLite>(stub_->channel_.get(), stub_->rpcmethod_RegisterTool_, context, request, response, std::move(f));
 }
 
-::grpc::ClientAsyncResponseReader< ::mcp::RegisterToolResponse>* MCPService::Stub::AsyncRegisterToolRaw(::grpc::ClientContext* context, const ::mcp::RegisterToolRequest& request, ::grpc::CompletionQueue* cq) {
-  return ::grpc::internal::ClientAsyncResponseReaderFactory< ::mcp::RegisterToolResponse>::Create(channel_.get(), cq, rpcmethod_RegisterTool_, context, request, true);
+void MCPService::Stub::async::RegisterTool(::grpc::ClientContext* context, const ::mcp::RegisterToolRequest* request, ::mcp::RegisterToolResponse* response, ::grpc::ClientUnaryReactor* reactor) {
+  ::grpc::internal::ClientCallbackUnaryFactory::Create< ::grpc::protobuf::MessageLite, ::grpc::protobuf::MessageLite>(stub_->channel_.get(), stub_->rpcmethod_RegisterTool_, context, request, response, reactor);
 }
 
 ::grpc::ClientAsyncResponseReader< ::mcp::RegisterToolResponse>* MCPService::Stub::PrepareAsyncRegisterToolRaw(::grpc::ClientContext* context, const ::mcp::RegisterToolRequest& request, ::grpc::CompletionQueue* cq) {
-  return ::grpc::internal::ClientAsyncResponseReaderFactory< ::mcp::RegisterToolResponse>::Create(channel_.get(), cq, rpcmethod_RegisterTool_, context, request, false);
+  return ::grpc::internal::ClientAsyncResponseReaderHelper::Create< ::mcp::RegisterToolResponse, ::mcp::RegisterToolRequest, ::grpc::protobuf::MessageLite, ::grpc::protobuf::MessageLite>(channel_.get(), cq, rpcmethod_RegisterTool_, context, request);
+}
+
+::grpc::ClientAsyncResponseReader< ::mcp::RegisterToolResponse>* MCPService::Stub::AsyncRegisterToolRaw(::grpc::ClientContext* context, const ::mcp::RegisterToolRequest& request, ::grpc::CompletionQueue* cq) {
+  auto* result =
+    this->PrepareAsyncRegisterToolRaw(context, request, cq);
+  result->StartCall();
+  return result;
 }
 
 ::grpc::Status MCPService::Stub::ListTools(::grpc::ClientContext* context, const ::mcp::ListToolsRequest& request, ::mcp::ListToolsResponse* response) {
-  return ::grpc::internal::BlockingUnaryCall(channel_.get(), rpcmethod_ListTools_, context, request, response);
+  return ::grpc::internal::BlockingUnaryCall< ::mcp::ListToolsRequest, ::mcp::ListToolsResponse, ::grpc::protobuf::MessageLite, ::grpc::protobuf::MessageLite>(channel_.get(), rpcmethod_ListTools_, context, request, response);
 }
 
-void MCPService::Stub::experimental_async::ListTools(::grpc::ClientContext* context, const ::mcp::ListToolsRequest* request, ::mcp::ListToolsResponse* response, std::function<void(::grpc::Status)> f) {
-  return ::grpc::internal::CallbackUnaryCall(stub_->channel_.get(), stub_->rpcmethod_ListTools_, context, request, response, std::move(f));
+void MCPService::Stub::async::ListTools(::grpc::ClientContext* context, const ::mcp::ListToolsRequest* request, ::mcp::ListToolsResponse* response, std::function<void(::grpc::Status)> f) {
+  ::grpc::internal::CallbackUnaryCall< ::mcp::ListToolsRequest, ::mcp::ListToolsResponse, ::grpc::protobuf::MessageLite, ::grpc::protobuf::MessageLite>(stub_->channel_.get(), stub_->rpcmethod_ListTools_, context, request, response, std::move(f));
 }
 
-::grpc::ClientAsyncResponseReader< ::mcp::ListToolsResponse>* MCPService::Stub::AsyncListToolsRaw(::grpc::ClientContext* context, const ::mcp::ListToolsRequest& request, ::grpc::CompletionQueue* cq) {
-  return ::grpc::internal::ClientAsyncResponseReaderFactory< ::mcp::ListToolsResponse>::Create(channel_.get(), cq, rpcmethod_ListTools_, context, request, true);
+void MCPService::Stub::async::ListTools(::grpc::ClientContext* context, const ::mcp::ListToolsRequest* request, ::mcp::ListToolsResponse* response, ::grpc::ClientUnaryReactor* reactor) {
+  ::grpc::internal::ClientCallbackUnaryFactory::Create< ::grpc::protobuf::MessageLite, ::grpc::protobuf::MessageLite>(stub_->channel_.get(), stub_->rpcmethod_ListTools_, context, request, response, reactor);
 }
 
 ::grpc::ClientAsyncResponseReader< ::mcp::ListToolsResponse>* MCPService::Stub::PrepareAsyncListToolsRaw(::grpc::ClientContext* context, const ::mcp::ListToolsRequest& request, ::grpc::CompletionQueue* cq) {
-  return ::grpc::internal::ClientAsyncResponseReaderFactory< ::mcp::ListToolsResponse>::Create(channel_.get(), cq, rpcmethod_ListTools_, context, request, false);
+  return ::grpc::internal::ClientAsyncResponseReaderHelper::Create< ::mcp::ListToolsResponse, ::mcp::ListToolsRequest, ::grpc::protobuf::MessageLite, ::grpc::protobuf::MessageLite>(channel_.get(), cq, rpcmethod_ListTools_, context, request);
+}
+
+::grpc::ClientAsyncResponseReader< ::mcp::ListToolsResponse>* MCPService::Stub::AsyncListToolsRaw(::grpc::ClientContext* context, const ::mcp::ListToolsRequest& request, ::grpc::CompletionQueue* cq) {
+  auto* result =
+    this->PrepareAsyncListToolsRaw(context, request, cq);
+  result->StartCall();
+  return result;
 }
 
 ::grpc::Status MCPService::Stub::RegisterPrompt(::grpc::ClientContext* context, const ::mcp::RegisterPromptRequest& request, ::mcp::RegisterPromptResponse* response) {
-  return ::grpc::internal::BlockingUnaryCall(channel_.get(), rpcmethod_RegisterPrompt_, context, request, response);
+  return ::grpc::internal::BlockingUnaryCall< ::mcp::RegisterPromptRequest, ::mcp::RegisterPromptResponse, ::grpc::protobuf::MessageLite, ::grpc::protobuf::MessageLite>(channel_.get(), rpcmethod_RegisterPrompt_, context, request, response);
 }
 
-void MCPService::Stub::experimental_async::RegisterPrompt(::grpc::ClientContext* context, const ::mcp::RegisterPromptRequest* request, ::mcp::RegisterPromptResponse* response, std::function<void(::grpc::Status)> f) {
-  return ::grpc::internal::CallbackUnaryCall(stub_->channel_.get(), stub_->rpcmethod_RegisterPrompt_, context, request, response, std::move(f));
+void MCPService::Stub::async::RegisterPrompt(::grpc::ClientContext* context, const ::mcp::RegisterPromptRequest* request, ::mcp::RegisterPromptResponse* response, std::function<void(::grpc::Status)> f) {
+  ::grpc::internal::CallbackUnaryCall< ::mcp::RegisterPromptRequest, ::mcp::RegisterPromptResponse, ::grpc::protobuf::MessageLite, ::grpc::protobuf::MessageLite>(stub_->channel_.get(), stub_->rpcmethod_RegisterPrompt_, context, request, response, std::move(f));
 }
 
-::grpc::ClientAsyncResponseReader< ::mcp::RegisterPromptResponse>* MCPService::Stub::AsyncRegisterPromptRaw(::grpc::ClientContext* context, const ::mcp::RegisterPromptRequest& request, ::grpc::CompletionQueue* cq) {
-  return ::grpc::internal::ClientAsyncResponseReaderFactory< ::mcp::RegisterPromptResponse>::Create(channel_.get(), cq, rpcmethod_RegisterPrompt_, context, request, true);
+void MCPService::Stub::async::RegisterPrompt(::grpc::ClientContext* context, const ::mcp::RegisterPromptRequest* request, ::mcp::RegisterPromptResponse* response, ::grpc::ClientUnaryReactor* reactor) {
+  ::grpc::internal::ClientCallbackUnaryFactory::Create< ::grpc::protobuf::MessageLite, ::grpc::protobuf::MessageLite>(stub_->channel_.get(), stub_->rpcmethod_RegisterPrompt_, context, request, response, reactor);
 }
 
 ::grpc::ClientAsyncResponseReader< ::mcp::RegisterPromptResponse>* MCPService::Stub::PrepareAsyncRegisterPromptRaw(::grpc::ClientContext* context, const ::mcp::RegisterPromptRequest& request, ::grpc::CompletionQueue* cq) {
-  return ::grpc::internal::ClientAsyncResponseReaderFactory< ::mcp::RegisterPromptResponse>::Create(channel_.get(), cq, rpcmethod_RegisterPrompt_, context, request, false);
+  return ::grpc::internal::ClientAsyncResponseReaderHelper::Create< ::mcp::RegisterPromptResponse, ::mcp::RegisterPromptRequest, ::grpc::protobuf::MessageLite, ::grpc::protobuf::MessageLite>(channel_.get(), cq, rpcmethod_RegisterPrompt_, context, request);
+}
+
+::grpc::ClientAsyncResponseReader< ::mcp::RegisterPromptResponse>* MCPService::Stub::AsyncRegisterPromptRaw(::grpc::ClientContext* context, const ::mcp::RegisterPromptRequest& request, ::grpc::CompletionQueue* cq) {
+  auto* result =
+    this->PrepareAsyncRegisterPromptRaw(context, request, cq);
+  result->StartCall();
+  return result;
 }
 
 ::grpc::Status MCPService::Stub::GetPrompt(::grpc::ClientContext* context, const ::mcp::GetPromptRequest& request, ::mcp::Prompt* response) {
-  return ::grpc::internal::BlockingUnaryCall(channel_.get(), rpcmethod_GetPrompt_, context, request, response);
+  return ::grpc::internal::BlockingUnaryCall< ::mcp::GetPromptRequest, ::mcp::Prompt, ::grpc::protobuf::MessageLite, ::grpc::protobuf::MessageLite>(channel_.get(), rpcmethod_GetPrompt_, context, request, response);
 }
 
-void MCPService::Stub::experimental_async::GetPrompt(::grpc::ClientContext* context, const ::mcp::GetPromptRequest* request, ::mcp::Prompt* response, std::function<void(::grpc::Status)> f) {
-  return ::grpc::internal::CallbackUnaryCall(stub_->channel_.get(), stub_->rpcmethod_GetPrompt_, context, request, response, std::move(f));
+void MCPService::Stub::async::GetPrompt(::grpc::ClientContext* context, const ::mcp::GetPromptRequest* request, ::mcp::Prompt* response, std::function<void(::grpc::Status)> f) {
+  ::grpc::internal::CallbackUnaryCall< ::mcp::GetPromptRequest, ::mcp::Prompt, ::grpc::protobuf::MessageLite, ::grpc::protobuf::MessageLite>(stub_->channel_.get(), stub_->rpcmethod_GetPrompt_, context, request, response, std::move(f));
 }
 
-::grpc::ClientAsyncResponseReader< ::mcp::Prompt>* MCPService::Stub::AsyncGetPromptRaw(::grpc::ClientContext* context, const ::mcp::GetPromptRequest& request, ::grpc::CompletionQueue* cq) {
-  return ::grpc::internal::ClientAsyncResponseReaderFactory< ::mcp::Prompt>::Create(channel_.get(), cq, rpcmethod_GetPrompt_, context, request, true);
+void MCPService::Stub::async::GetPrompt(::grpc::ClientContext* context, const ::mcp::GetPromptRequest* request, ::mcp::Prompt* response, ::grpc::ClientUnaryReactor* reactor) {
+  ::grpc::internal::ClientCallbackUnaryFactory::Create< ::grpc::protobuf::MessageLite, ::grpc::protobuf::MessageLite>(stub_->channel_.get(), stub_->rpcmethod_GetPrompt_, context, request, response, reactor);
 }
 
 ::grpc::ClientAsyncResponseReader< ::mcp::Prompt>* MCPService::Stub::PrepareAsyncGetPromptRaw(::grpc::ClientContext* context, const ::mcp::GetPromptRequest& request, ::grpc::CompletionQueue* cq) {
-  return ::grpc::internal::ClientAsyncResponseReaderFactory< ::mcp::Prompt>::Create(channel_.get(), cq, rpcmethod_GetPrompt_, context, request, false);
+  return ::grpc::internal::ClientAsyncResponseReaderHelper::Create< ::mcp::Prompt, ::mcp::GetPromptRequest, ::grpc::protobuf::MessageLite, ::grpc::protobuf::MessageLite>(channel_.get(), cq, rpcmethod_GetPrompt_, context, request);
+}
+
+::grpc::ClientAsyncResponseReader< ::mcp::Prompt>* MCPService::Stub::AsyncGetPromptRaw(::grpc::ClientContext* context, const ::mcp::GetPromptRequest& request, ::grpc::CompletionQueue* cq) {
+  auto* result =
+    this->PrepareAsyncGetPromptRaw(context, request, cq);
+  result->StartCall();
+  return result;
 }
 
 ::grpc::Status MCPService::Stub::ListPrompts(::grpc::ClientContext* context, const ::mcp::ListPromptsRequest& request, ::mcp::ListPromptsResponse* response) {
-  return ::grpc::internal::BlockingUnaryCall(channel_.get(), rpcmethod_ListPrompts_, context, request, response);
+  return ::grpc::internal::BlockingUnaryCall< ::mcp::ListPromptsRequest, ::mcp::ListPromptsResponse, ::grpc::protobuf::MessageLite, ::grpc::protobuf::MessageLite>(channel_.get(), rpcmethod_ListPrompts_, context, request, response);
 }
 
-void MCPService::Stub::experimental_async::ListPrompts(::grpc::ClientContext* context, const ::mcp::ListPromptsRequest* request, ::mcp::ListPromptsResponse* response, std::function<void(::grpc::Status)> f) {
-  return ::grpc::internal::CallbackUnaryCall(stub_->channel_.get(), stub_->rpcmethod_ListPrompts_, context, request, response, std::move(f));
+void MCPService::Stub::async::ListPrompts(::grpc::ClientContext* context, const ::mcp::ListPromptsRequest* request, ::mcp::ListPromptsResponse* response, std::function<void(::grpc::Status)> f) {
+  ::grpc::internal::CallbackUnaryCall< ::mcp::ListPromptsRequest, ::mcp::ListPromptsResponse, ::grpc::protobuf::MessageLite, ::grpc::protobuf::MessageLite>(stub_->channel_.get(), stub_->rpcmethod_ListPrompts_, context, request, response, std::move(f));
 }
 
-::grpc::ClientAsyncResponseReader< ::mcp::ListPromptsResponse>* MCPService::Stub::AsyncListPromptsRaw(::grpc::ClientContext* context, const ::mcp::ListPromptsRequest& request, ::grpc::CompletionQueue* cq) {
-  return ::grpc::internal::ClientAsyncResponseReaderFactory< ::mcp::ListPromptsResponse>::Create(channel_.get(), cq, rpcmethod_ListPrompts_, context, request, true);
+void MCPService::Stub::async::ListPrompts(::grpc::ClientContext* context, const ::mcp::ListPromptsRequest* request, ::mcp::ListPromptsResponse* response, ::grpc::ClientUnaryReactor* reactor) {
+  ::grpc::internal::ClientCallbackUnaryFactory::Create< ::grpc::protobuf::MessageLite, ::grpc::protobuf::MessageLite>(stub_->channel_.get(), stub_->rpcmethod_ListPrompts_, context, request, response, reactor);
 }
 
 ::grpc::ClientAsyncResponseReader< ::mcp::ListPromptsResponse>* MCPService::Stub::PrepareAsyncListPromptsRaw(::grpc::ClientContext* context, const ::mcp::ListPromptsRequest& request, ::grpc::CompletionQueue* cq) {
-  return ::grpc::internal::ClientAsyncResponseReaderFactory< ::mcp::ListPromptsResponse>::Create(channel_.get(), cq, rpcmethod_ListPrompts_, context, request, false);
+  return ::grpc::internal::ClientAsyncResponseReaderHelper::Create< ::mcp::ListPromptsResponse, ::mcp::ListPromptsRequest, ::grpc::protobuf::MessageLite, ::grpc::protobuf::MessageLite>(channel_.get(), cq, rpcmethod_ListPrompts_, context, request);
+}
+
+::grpc::ClientAsyncResponseReader< ::mcp::ListPromptsResponse>* MCPService::Stub::AsyncListPromptsRaw(::grpc::ClientContext* context, const ::mcp::ListPromptsRequest& request, ::grpc::CompletionQueue* cq) {
+  auto* result =
+    this->PrepareAsyncListPromptsRaw(context, request, cq);
+  result->StartCall();
+  return result;
 }
 
 ::grpc::Status MCPService::Stub::UpdatePrompt(::grpc::ClientContext* context, const ::mcp::UpdatePromptRequest& request, ::mcp::UpdatePromptResponse* response) {
-  return ::grpc::internal::BlockingUnaryCall(channel_.get(), rpcmethod_UpdatePrompt_, context, request, response);
+  return ::grpc::internal::BlockingUnaryCall< ::mcp::UpdatePromptRequest, ::mcp::UpdatePromptResponse, ::grpc::protobuf::MessageLite, ::grpc::protobuf::MessageLite>(channel_.get(), rpcmethod_UpdatePrompt_, context, request, response);
 }
 
-void MCPService::Stub::experimental_async::UpdatePrompt(::grpc::ClientContext* context, const ::mcp::UpdatePromptRequest* request, ::mcp::UpdatePromptResponse* response, std::function<void(::grpc::Status)> f) {
-  return ::grpc::internal::CallbackUnaryCall(stub_->channel_.get(), stub_->rpcmethod_UpdatePrompt_, context, request, response, std::move(f));
+void MCPService::Stub::async::UpdatePrompt(::grpc::ClientContext* context, const ::mcp::UpdatePromptRequest* request, ::mcp::UpdatePromptResponse* response, std::function<void(::grpc::Status)> f) {
+  ::grpc::internal::CallbackUnaryCall< ::mcp::UpdatePromptRequest, ::mcp::UpdatePromptResponse, ::grpc::protobuf::MessageLite, ::grpc::protobuf::MessageLite>(stub_->channel_.get(), stub_->rpcmethod_UpdatePrompt_, context, request, response, std::move(f));
 }
 
-::grpc::ClientAsyncResponseReader< ::mcp::UpdatePromptResponse>* MCPService::Stub::AsyncUpdatePromptRaw(::grpc::ClientContext* context, const ::mcp::UpdatePromptRequest& request, ::grpc::CompletionQueue* cq) {
-  return ::grpc::internal::ClientAsyncResponseReaderFactory< ::mcp::UpdatePromptResponse>::Create(channel_.get(), cq, rpcmethod_UpdatePrompt_, context, request, true);
+void MCPService::Stub::async::UpdatePrompt(::grpc::ClientContext* context, const ::mcp::UpdatePromptRequest* request, ::mcp::UpdatePromptResponse* response, ::grpc::ClientUnaryReactor* reactor) {
+  ::grpc::internal::ClientCallbackUnaryFactory::Create< ::grpc::protobuf::MessageLite, ::grpc::protobuf::MessageLite>(stub_->channel_.get(), stub_->rpcmethod_UpdatePrompt_, context, request, response, reactor);
 }
 
 ::grpc::ClientAsyncResponseReader< ::mcp::UpdatePromptResponse>* MCPService::Stub::PrepareAsyncUpdatePromptRaw(::grpc::ClientContext* context, const ::mcp::UpdatePromptRequest& request, ::grpc::CompletionQueue* cq) {
-  return ::grpc::internal::ClientAsyncResponseReaderFactory< ::mcp::UpdatePromptResponse>::Create(channel_.get(), cq, rpcmethod_UpdatePrompt_, context, request, false);
+  return ::grpc::internal::ClientAsyncResponseReaderHelper::Create< ::mcp::UpdatePromptResponse, ::mcp::UpdatePromptRequest, ::grpc::protobuf::MessageLite, ::grpc::protobuf::MessageLite>(channel_.get(), cq, rpcmethod_UpdatePrompt_, context, request);
+}
+
+::grpc::ClientAsyncResponseReader< ::mcp::UpdatePromptResponse>* MCPService::Stub::AsyncUpdatePromptRaw(::grpc::ClientContext* context, const ::mcp::UpdatePromptRequest& request, ::grpc::CompletionQueue* cq) {
+  auto* result =
+    this->PrepareAsyncUpdatePromptRaw(context, request, cq);
+  result->StartCall();
+  return result;
 }
 
 ::grpc::Status MCPService::Stub::DeletePrompt(::grpc::ClientContext* context, const ::mcp::DeletePromptRequest& request, ::mcp::DeletePromptResponse* response) {
-  return ::grpc::internal::BlockingUnaryCall(channel_.get(), rpcmethod_DeletePrompt_, context, request, response);
+  return ::grpc::internal::BlockingUnaryCall< ::mcp::DeletePromptRequest, ::mcp::DeletePromptResponse, ::grpc::protobuf::MessageLite, ::grpc::protobuf::MessageLite>(channel_.get(), rpcmethod_DeletePrompt_, context, request, response);
 }
 
-void MCPService::Stub::experimental_async::DeletePrompt(::grpc::ClientContext* context, const ::mcp::DeletePromptRequest* request, ::mcp::DeletePromptResponse* response, std::function<void(::grpc::Status)> f) {
-  return ::grpc::internal::CallbackUnaryCall(stub_->channel_.get(), stub_->rpcmethod_DeletePrompt_, context, request, response, std::move(f));
+void MCPService::Stub::async::DeletePrompt(::grpc::ClientContext* context, const ::mcp::DeletePromptRequest* request, ::mcp::DeletePromptResponse* response, std::function<void(::grpc::Status)> f) {
+  ::grpc::internal::CallbackUnaryCall< ::mcp::DeletePromptRequest, ::mcp::DeletePromptResponse, ::grpc::protobuf::MessageLite, ::grpc::protobuf::MessageLite>(stub_->channel_.get(), stub_->rpcmethod_DeletePrompt_, context, request, response, std::move(f));
 }
 
-::grpc::ClientAsyncResponseReader< ::mcp::DeletePromptResponse>* MCPService::Stub::AsyncDeletePromptRaw(::grpc::ClientContext* context, const ::mcp::DeletePromptRequest& request, ::grpc::CompletionQueue* cq) {
-  return ::grpc::internal::ClientAsyncResponseReaderFactory< ::mcp::DeletePromptResponse>::Create(channel_.get(), cq, rpcmethod_DeletePrompt_, context, request, true);
+void MCPService::Stub::async::DeletePrompt(::grpc::ClientContext* context, const ::mcp::DeletePromptRequest* request, ::mcp::DeletePromptResponse* response, ::grpc::ClientUnaryReactor* reactor) {
+  ::grpc::internal::ClientCallbackUnaryFactory::Create< ::grpc::protobuf::MessageLite, ::grpc::protobuf::MessageLite>(stub_->channel_.get(), stub_->rpcmethod_DeletePrompt_, context, request, response, reactor);
 }
 
 ::grpc::ClientAsyncResponseReader< ::mcp::DeletePromptResponse>* MCPService::Stub::PrepareAsyncDeletePromptRaw(::grpc::ClientContext* context, const ::mcp::DeletePromptRequest& request, ::grpc::CompletionQueue* cq) {
-  return ::grpc::internal::ClientAsyncResponseReaderFactory< ::mcp::DeletePromptResponse>::Create(channel_.get(), cq, rpcmethod_DeletePrompt_, context, request, false);
+  return ::grpc::internal::ClientAsyncResponseReaderHelper::Create< ::mcp::DeletePromptResponse, ::mcp::DeletePromptRequest, ::grpc::protobuf::MessageLite, ::grpc::protobuf::MessageLite>(channel_.get(), cq, rpcmethod_DeletePrompt_, context, request);
+}
+
+::grpc::ClientAsyncResponseReader< ::mcp::DeletePromptResponse>* MCPService::Stub::AsyncDeletePromptRaw(::grpc::ClientContext* context, const ::mcp::DeletePromptRequest& request, ::grpc::CompletionQueue* cq) {
+  auto* result =
+    this->PrepareAsyncDeletePromptRaw(context, request, cq);
+  result->StartCall();
+  return result;
 }
 
 MCPService::Service::Service() {
   AddMethod(new ::grpc::internal::RpcServiceMethod(
       MCPService_method_names[0],
       ::grpc::internal::RpcMethod::NORMAL_RPC,
-      new ::grpc::internal::RpcMethodHandler< MCPService::Service, ::mcp::RegisterRequest, ::mcp::RegisterResponse>(
-          std::mem_fn(&MCPService::Service::Register), this)));
+      new ::grpc::internal::RpcMethodHandler< MCPService::Service, ::mcp::RegisterRequest, ::mcp::RegisterResponse, ::grpc::protobuf::MessageLite, ::grpc::protobuf::MessageLite>(
+          [](MCPService::Service* service,
+             ::grpc::ServerContext* ctx,
+             const ::mcp::RegisterRequest* req,
+             ::mcp::RegisterResponse* resp) {
+               return service->Register(ctx, req, resp);
+             }, this)));
   AddMethod(new ::grpc::internal::RpcServiceMethod(
       MCPService_method_names[1],
       ::grpc::internal::RpcMethod::NORMAL_RPC,
-      new ::grpc::internal::RpcMethodHandler< MCPService::Service, ::mcp::InitializeRequest, ::mcp::InitializeResult>(
-          std::mem_fn(&MCPService::Service::Initialize), this)));
+      new ::grpc::internal::RpcMethodHandler< MCPService::Service, ::mcp::InitializeRequest, ::mcp::InitializeResult, ::grpc::protobuf::MessageLite, ::grpc::protobuf::MessageLite>(
+          [](MCPService::Service* service,
+             ::grpc::ServerContext* ctx,
+             const ::mcp::InitializeRequest* req,
+             ::mcp::InitializeResult* resp) {
+               return service->Initialize(ctx, req, resp);
+             }, this)));
   AddMethod(new ::grpc::internal::RpcServiceMethod(
       MCPService_method_names[2],
       ::grpc::internal::RpcMethod::NORMAL_RPC,
-      new ::grpc::internal::RpcMethodHandler< MCPService::Service, ::mcp::JSONRPCRequest, ::mcp::JSONRPCResponse>(
-          std::mem_fn(&MCPService::Service::HandleRequest), this)));
+      new ::grpc::internal::RpcMethodHandler< MCPService::Service, ::mcp::JSONRPCRequest, ::mcp::JSONRPCResponse, ::grpc::protobuf::MessageLite, ::grpc::protobuf::MessageLite>(
+          [](MCPService::Service* service,
+             ::grpc::ServerContext* ctx,
+             const ::mcp::JSONRPCRequest* req,
+             ::mcp::JSONRPCResponse* resp) {
+               return service->HandleRequest(ctx, req, resp);
+             }, this)));
   AddMethod(new ::grpc::internal::RpcServiceMethod(
       MCPService_method_names[3],
       ::grpc::internal::RpcMethod::NORMAL_RPC,
-      new ::grpc::internal::RpcMethodHandler< MCPService::Service, ::mcp::JSONRPCNotification, ::mcp::Empty>(
-          std::mem_fn(&MCPService::Service::HandleNotification), this)));
+      new ::grpc::internal::RpcMethodHandler< MCPService::Service, ::mcp::JSONRPCNotification, ::mcp::Empty, ::grpc::protobuf::MessageLite, ::grpc::protobuf::MessageLite>(
+          [](MCPService::Service* service,
+             ::grpc::ServerContext* ctx,
+             const ::mcp::JSONRPCNotification* req,
+             ::mcp::Empty* resp) {
+               return service->HandleNotification(ctx, req, resp);
+             }, this)));
   AddMethod(new ::grpc::internal::RpcServiceMethod(
       MCPService_method_names[4],
       ::grpc::internal::RpcMethod::NORMAL_RPC,
-      new ::grpc::internal::RpcMethodHandler< MCPService::Service, ::mcp::JSONRPCBatchRequest, ::mcp::JSONRPCBatchResponse>(
-          std::mem_fn(&MCPService::Service::HandleBatchRequest), this)));
+      new ::grpc::internal::RpcMethodHandler< MCPService::Service, ::mcp::JSONRPCBatchRequest, ::mcp::JSONRPCBatchResponse, ::grpc::protobuf::MessageLite, ::grpc::protobuf::MessageLite>(
+          [](MCPService::Service* service,
+             ::grpc::ServerContext* ctx,
+             const ::mcp::JSONRPCBatchRequest* req,
+             ::mcp::JSONRPCBatchResponse* resp) {
+               return service->HandleBatchRequest(ctx, req, resp);
+             }, this)));
   AddMethod(new ::grpc::internal::RpcServiceMethod(
       MCPService_method_names[5],
       ::grpc::internal::RpcMethod::NORMAL_RPC,
-      new ::grpc::internal::RpcMethodHandler< MCPService::Service, ::mcp::RegisterInputSchemaRequest, ::mcp::RegisterInputSchemaResponse>(
-          std::mem_fn(&MCPService::Service::RegisterInputSchema), this)));
+      new ::grpc::internal::RpcMethodHandler< MCPService::Service, ::mcp::RegisterInputSchemaRequest, ::mcp::RegisterInputSchemaResponse, ::grpc::protobuf::MessageLite, ::grpc::protobuf::MessageLite>(
+          [](MCPService::Service* service,
+             ::grpc::ServerContext* ctx,
+             const ::mcp::RegisterInputSchemaRequest* req,
+             ::mcp::RegisterInputSchemaResponse* resp) {
+               return service->RegisterInputSchema(ctx, req, resp);
+             }, this)));
   AddMethod(new ::grpc::internal::RpcServiceMethod(
       MCPService_method_names[6],
       ::grpc::internal::RpcMethod::NORMAL_RPC,
-      new ::grpc::internal::RpcMethodHandler< MCPService::Service, ::mcp::GetInputSchemaRequest, ::mcp::InputSchema>(
-          std::mem_fn(&MCPService::Service::GetInputSchema), this)));
+      new ::grpc::internal::RpcMethodHandler< MCPService::Service, ::mcp::GetInputSchemaRequest, ::mcp::InputSchema, ::grpc::protobuf::MessageLite, ::grpc::protobuf::MessageLite>(
+          [](MCPService::Service* service,
+             ::grpc::ServerContext* ctx,
+             const ::mcp::GetInputSchemaRequest* req,
+             ::mcp::InputSchema* resp) {
+               return service->GetInputSchema(ctx, req, resp);
+             }, this)));
   AddMethod(new ::grpc::internal::RpcServiceMethod(
       MCPService_method_names[7],
       ::grpc::internal::RpcMethod::NORMAL_RPC,
-      new ::grpc::internal::RpcMethodHandler< MCPService::Service, ::mcp::ListResourcesRequest, ::mcp::ListResourcesResult>(
-          std::mem_fn(&MCPService::Service::ListResources), this)));
+      new ::grpc::internal::RpcMethodHandler< MCPService::Service, ::mcp::ListResourcesRequest, ::mcp::ListResourcesResult, ::grpc::protobuf::MessageLite, ::grpc::protobuf::MessageLite>(
+          [](MCPService::Service* service,
+             ::grpc::ServerContext* ctx,
+             const ::mcp::ListResourcesRequest* req,
+             ::mcp::ListResourcesResult* resp) {
+               return service->ListResources(ctx, req, resp);
+             }, this)));
   AddMethod(new ::grpc::internal::RpcServiceMethod(
       MCPService_method_names[8],
       ::grpc::internal::RpcMethod::NORMAL_RPC,
-      new ::grpc::internal::RpcMethodHandler< MCPService::Service, ::mcp::ReadResourceRequest, ::mcp::ReadResourceResult>(
-          std::mem_fn(&MCPService::Service::ReadResource), this)));
+      new ::grpc::internal::RpcMethodHandler< MCPService::Service, ::mcp::ReadResourceRequest, ::mcp::ReadResourceResult, ::grpc::protobuf::MessageLite, ::grpc::protobuf::MessageLite>(
+          [](MCPService::Service* service,
+             ::grpc::ServerContext* ctx,
+             const ::mcp::ReadResourceRequest* req,
+             ::mcp::ReadResourceResult* resp) {
+               return service->ReadResource(ctx, req, resp);
+             }, this)));
   AddMethod(new ::grpc::internal::RpcServiceMethod(
       MCPService_method_names[9],
       ::grpc::internal::RpcMethod::NORMAL_RPC,
-      new ::grpc::internal::RpcMethodHandler< MCPService::Service, ::mcp::RegisterToolRequest, ::mcp::RegisterToolResponse>(
-          std::mem_fn(&MCPService::Service::RegisterTool), this)));
+      new ::grpc::internal::RpcMethodHandler< MCPService::Service, ::mcp::RegisterToolRequest, ::mcp::RegisterToolResponse, ::grpc::protobuf::MessageLite, ::grpc::protobuf::MessageLite>(
+          [](MCPService::Service* service,
+             ::grpc::ServerContext* ctx,
+             const ::mcp::RegisterToolRequest* req,
+             ::mcp::RegisterToolResponse* resp) {
+               return service->RegisterTool(ctx, req, resp);
+             }, this)));
   AddMethod(new ::grpc::internal::RpcServiceMethod(
       MCPService_method_names[10],
       ::grpc::internal::RpcMethod::NORMAL_RPC,
-      new ::grpc::internal::RpcMethodHandler< MCPService::Service, ::mcp::ListToolsRequest, ::mcp::ListToolsResponse>(
-          std::mem_fn(&MCPService::Service::ListTools), this)));
+      new ::grpc::internal::RpcMethodHandler< MCPService::Service, ::mcp::ListToolsRequest, ::mcp::ListToolsResponse, ::grpc::protobuf::MessageLite, ::grpc::protobuf::MessageLite>(
+          [](MCPService::Service* service,
+             ::grpc::ServerContext* ctx,
+             const ::mcp::ListToolsRequest* req,
+             ::mcp::ListToolsResponse* resp) {
+               return service->ListTools(ctx, req, resp);
+             }, this)));
   AddMethod(new ::grpc::internal::RpcServiceMethod(
       MCPService_method_names[11],
       ::grpc::internal::RpcMethod::NORMAL_RPC,
-      new ::grpc::internal::RpcMethodHandler< MCPService::Service, ::mcp::RegisterPromptRequest, ::mcp::RegisterPromptResponse>(
-          std::mem_fn(&MCPService::Service::RegisterPrompt), this)));
+      new ::grpc::internal::RpcMethodHandler< MCPService::Service, ::mcp::RegisterPromptRequest, ::mcp::RegisterPromptResponse, ::grpc::protobuf::MessageLite, ::grpc::protobuf::MessageLite>(
+          [](MCPService::Service* service,
+             ::grpc::ServerContext* ctx,
+             const ::mcp::RegisterPromptRequest* req,
+             ::mcp::RegisterPromptResponse* resp) {
+               return service->RegisterPrompt(ctx, req, resp);
+             }, this)));
   AddMethod(new ::grpc::internal::RpcServiceMethod(
       MCPService_method_names[12],
       ::grpc::internal::RpcMethod::NORMAL_RPC,
-      new ::grpc::internal::RpcMethodHandler< MCPService::Service, ::mcp::GetPromptRequest, ::mcp::Prompt>(
-          std::mem_fn(&MCPService::Service::GetPrompt), this)));
+      new ::grpc::internal::RpcMethodHandler< MCPService::Service, ::mcp::GetPromptRequest, ::mcp::Prompt, ::grpc::protobuf::MessageLite, ::grpc::protobuf::MessageLite>(
+          [](MCPService::Service* service,
+             ::grpc::ServerContext* ctx,
+             const ::mcp::GetPromptRequest* req,
+             ::mcp::Prompt* resp) {
+               return service->GetPrompt(ctx, req, resp);
+             }, this)));
   AddMethod(new ::grpc::internal::RpcServiceMethod(
       MCPService_method_names[13],
       ::grpc::internal::RpcMethod::NORMAL_RPC,
-      new ::grpc::internal::RpcMethodHandler< MCPService::Service, ::mcp::ListPromptsRequest, ::mcp::ListPromptsResponse>(
-          std::mem_fn(&MCPService::Service::ListPrompts), this)));
+      new ::grpc::internal::RpcMethodHandler< MCPService::Service, ::mcp::ListPromptsRequest, ::mcp::ListPromptsResponse, ::grpc::protobuf::MessageLite, ::grpc::protobuf::MessageLite>(
+          [](MCPService::Service* service,
+             ::grpc::ServerContext* ctx,
+             const ::mcp::ListPromptsRequest* req,
+             ::mcp::ListPromptsResponse* resp) {
+               return service->ListPrompts(ctx, req, resp);
+             }, this)));
   AddMethod(new ::grpc::internal::RpcServiceMethod(
       MCPService_method_names[14],
       ::grpc::internal::RpcMethod::NORMAL_RPC,
-      new ::grpc::internal::RpcMethodHandler< MCPService::Service, ::mcp::UpdatePromptRequest, ::mcp::UpdatePromptResponse>(
-          std::mem_fn(&MCPService::Service::UpdatePrompt), this)));
+      new ::grpc::internal::RpcMethodHandler< MCPService::Service, ::mcp::UpdatePromptRequest, ::mcp::UpdatePromptResponse, ::grpc::protobuf::MessageLite, ::grpc::protobuf::MessageLite>(
+          [](MCPService::Service* service,
+             ::grpc::ServerContext* ctx,
+             const ::mcp::UpdatePromptRequest* req,
+             ::mcp::UpdatePromptResponse* resp) {
+               return service->UpdatePrompt(ctx, req, resp);
+             }, this)));
   AddMethod(new ::grpc::internal::RpcServiceMethod(
       MCPService_method_names[15],
       ::grpc::internal::RpcMethod::NORMAL_RPC,
-      new ::grpc::internal::RpcMethodHandler< MCPService::Service, ::mcp::DeletePromptRequest, ::mcp::DeletePromptResponse>(
-          std::mem_fn(&MCPService::Service::DeletePrompt), this)));
+      new ::grpc::internal::RpcMethodHandler< MCPService::Service, ::mcp::DeletePromptRequest, ::mcp::DeletePromptResponse, ::grpc::protobuf::MessageLite, ::grpc::protobuf::MessageLite>(
+          [](MCPService::Service* service,
+             ::grpc::ServerContext* ctx,
+             const ::mcp::DeletePromptRequest* req,
+             ::mcp::DeletePromptResponse* resp) {
+               return service->DeletePrompt(ctx, req, resp);
+             }, this)));
 }
 
 MCPService::Service::~Service() {

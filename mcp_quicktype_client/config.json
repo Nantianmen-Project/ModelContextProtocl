@@ -1,0 +1,33 @@
+{
+    "mcpServers": {
+        "amap-maps": {
+            "command": "npx",
+            "args": [
+                "-y",
+                "@amap/amap-maps-mcp-server"
+            ],
+            "env": {
+                "AMAP_MAPS_API_KEY": "您在高德官网上申请的key"
+            }
+        },
+        "example-server": {
+            "command": "node",
+            "args": [
+                "example-server.js"
+            ],
+            "env": {
+                "NODE_ENV": "production",
+                "DEBUG": "true"
+            }
+        },
+        "filesystem": {
+        "command": "npx",
+        "args": [
+            "-y",
+            "@modelcontextprotocol/server-filesystem",
+            "/Users/apple/wangjiandong/ModelContextProtocl/mcp_quicktype_client/build",
+            "/Users/apple/wangjiandong/ModelContextProtocl/mcp_quicktype_client/build"
+            ]
+        }
+    }
+} 

@@ -1,0 +1,4 @@
+/Users/apple/wangjiandong/ModelContextProtocl/cplusplus-sdk/demo/build/CMakeFiles/server.dir
+/Users/apple/wangjiandong/ModelContextProtocl/cplusplus-sdk/demo/build/CMakeFiles/client.dir
+/Users/apple/wangjiandong/ModelContextProtocl/cplusplus-sdk/demo/build/CMakeFiles/edit_cache.dir
+/Users/apple/wangjiandong/ModelContextProtocl/cplusplus-sdk/demo/build/CMakeFiles/rebuild_cache.dir

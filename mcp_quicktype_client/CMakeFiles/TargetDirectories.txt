@@ -1,0 +1,11 @@
+/Users/apple/wangjiandong/ModelContextProtocl/mcp_quicktype_client/CMakeFiles/mcp_client_lib.dir
+/Users/apple/wangjiandong/ModelContextProtocl/mcp_quicktype_client/CMakeFiles/mcp_client.dir
+/Users/apple/wangjiandong/ModelContextProtocl/mcp_quicktype_client/CMakeFiles/amap_example.dir
+/Users/apple/wangjiandong/ModelContextProtocl/mcp_quicktype_client/CMakeFiles/local_file_example.dir
+/Users/apple/wangjiandong/ModelContextProtocl/mcp_quicktype_client/CMakeFiles/filesystem_example.dir
+/Users/apple/wangjiandong/ModelContextProtocl/mcp_quicktype_client/CMakeFiles/edit_cache.dir
+/Users/apple/wangjiandong/ModelContextProtocl/mcp_quicktype_client/CMakeFiles/rebuild_cache.dir
+/Users/apple/wangjiandong/ModelContextProtocl/mcp_quicktype_client/CMakeFiles/list_install_components.dir
+/Users/apple/wangjiandong/ModelContextProtocl/mcp_quicktype_client/CMakeFiles/install.dir
+/Users/apple/wangjiandong/ModelContextProtocl/mcp_quicktype_client/CMakeFiles/install/local.dir
+/Users/apple/wangjiandong/ModelContextProtocl/mcp_quicktype_client/CMakeFiles/install/strip.dir

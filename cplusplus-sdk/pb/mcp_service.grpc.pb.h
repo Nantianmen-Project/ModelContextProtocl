@@ -7,23 +7,23 @@
 #include "mcp_service.pb.h"
 
 #include <functional>
-#include <grpcpp/impl/codegen/async_generic_service.h>
-#include <grpcpp/impl/codegen/async_stream.h>
-#include <grpcpp/impl/codegen/async_unary_call.h>
-#include <grpcpp/impl/codegen/method_handler_impl.h>
+#include <grpcpp/generic/async_generic_service.h>
+#include <grpcpp/support/async_stream.h>
+#include <grpcpp/support/async_unary_call.h>
+#include <grpcpp/support/client_callback.h>
+#include <grpcpp/client_context.h>
+#include <grpcpp/completion_queue.h>
+#include <grpcpp/support/message_allocator.h>
+#include <grpcpp/support/method_handler.h>
 #include <grpcpp/impl/codegen/proto_utils.h>
-#include <grpcpp/impl/codegen/rpc_method.h>
-#include <grpcpp/impl/codegen/service_type.h>
+#include <grpcpp/impl/rpc_method.h>
+#include <grpcpp/support/server_callback.h>
+#include <grpcpp/impl/codegen/server_callback_handlers.h>
+#include <grpcpp/server_context.h>
+#include <grpcpp/impl/service_type.h>
 #include <grpcpp/impl/codegen/status.h>
-#include <grpcpp/impl/codegen/stub_options.h>
-#include <grpcpp/impl/codegen/sync_stream.h>
-
-namespace grpc {
-class CompletionQueue;
-class Channel;
-class ServerCompletionQueue;
-class ServerContext;
-}  // namespace grpc
+#include <grpcpp/support/stub_options.h>
+#include <grpcpp/support/sync_stream.h>
 
 namespace mcp {
 
@@ -154,34 +154,52 @@ class MCPService final {
     std::unique_ptr< ::grpc::ClientAsyncResponseReaderInterface< ::mcp::DeletePromptResponse>> PrepareAsyncDeletePrompt(::grpc::ClientContext* context, const ::mcp::DeletePromptRequest& request, ::grpc::CompletionQueue* cq) {
       return std::unique_ptr< ::grpc::ClientAsyncResponseReaderInterface< ::mcp::DeletePromptResponse>>(PrepareAsyncDeletePromptRaw(context, request, cq));
     }
-    class experimental_async_interface {
+    class async_interface {
      public:
-      virtual ~experimental_async_interface() {}
+      virtual ~async_interface() {}
       // Registration and initialization
       virtual void Register(::grpc::ClientContext* context, const ::mcp::RegisterRequest* request, ::mcp::RegisterResponse* response, std::function<void(::grpc::Status)>) = 0;
+      virtual void Register(::grpc::ClientContext* context, const ::mcp::RegisterRequest* request, ::mcp::RegisterResponse* response, ::grpc::ClientUnaryReactor* reactor) = 0;
       virtual void Initialize(::grpc::ClientContext* context, const ::mcp::InitializeRequest* request, ::mcp::InitializeResult* response, std::function<void(::grpc::Status)>) = 0;
+      virtual void Initialize(::grpc::ClientContext* context, const ::mcp::InitializeRequest* request, ::mcp::InitializeResult* response, ::grpc::ClientUnaryReactor* reactor) = 0;
       // Message handling
       virtual void HandleRequest(::grpc::ClientContext* context, const ::mcp::JSONRPCRequest* request, ::mcp::JSONRPCResponse* response, std::function<void(::grpc::Status)>) = 0;
+      virtual void HandleRequest(::grpc::ClientContext* context, const ::mcp::JSONRPCRequest* request, ::mcp::JSONRPCResponse* response, ::grpc::ClientUnaryReactor* reactor) = 0;
       virtual void HandleNotification(::grpc::ClientContext* context, const ::mcp::JSONRPCNotification* request, ::mcp::Empty* response, std::function<void(::grpc::Status)>) = 0;
+      virtual void HandleNotification(::grpc::ClientContext* context, const ::mcp::JSONRPCNotification* request, ::mcp::Empty* response, ::grpc::ClientUnaryReactor* reactor) = 0;
       virtual void HandleBatchRequest(::grpc::ClientContext* context, const ::mcp::JSONRPCBatchRequest* request, ::mcp::JSONRPCBatchResponse* response, std::function<void(::grpc::Status)>) = 0;
+      virtual void HandleBatchRequest(::grpc::ClientContext* context, const ::mcp::JSONRPCBatchRequest* request, ::mcp::JSONRPCBatchResponse* response, ::grpc::ClientUnaryReactor* reactor) = 0;
       // Schema management
       virtual void RegisterInputSchema(::grpc::ClientContext* context, const ::mcp::RegisterInputSchemaRequest* request, ::mcp::RegisterInputSchemaResponse* response, std::function<void(::grpc::Status)>) = 0;
+      virtual void RegisterInputSchema(::grpc::ClientContext* context, const ::mcp::RegisterInputSchemaRequest* request, ::mcp::RegisterInputSchemaResponse* response, ::grpc::ClientUnaryReactor* reactor) = 0;
       virtual void GetInputSchema(::grpc::ClientContext* context, const ::mcp::GetInputSchemaRequest* request, ::mcp::InputSchema* response, std::function<void(::grpc::Status)>) = 0;
+      virtual void GetInputSchema(::grpc::ClientContext* context, const ::mcp::GetInputSchemaRequest* request, ::mcp::InputSchema* response, ::grpc::ClientUnaryReactor* reactor) = 0;
       // Resource management
       virtual void ListResources(::grpc::ClientContext* context, const ::mcp::ListResourcesRequest* request, ::mcp::ListResourcesResult* response, std::function<void(::grpc::Status)>) = 0;
+      virtual void ListResources(::grpc::ClientContext* context, const ::mcp::ListResourcesRequest* request, ::mcp::ListResourcesResult* response, ::grpc::ClientUnaryReactor* reactor) = 0;
       virtual void ReadResource(::grpc::ClientContext* context, const ::mcp::ReadResourceRequest* request, ::mcp::ReadResourceResult* response, std::function<void(::grpc::Status)>) = 0;
+      virtual void ReadResource(::grpc::ClientContext* context, const ::mcp::ReadResourceRequest* request, ::mcp::ReadResourceResult* response, ::grpc::ClientUnaryReactor* reactor) = 0;
       // Tool management
       virtual void RegisterTool(::grpc::ClientContext* context, const ::mcp::RegisterToolRequest* request, ::mcp::RegisterToolResponse* response, std::function<void(::grpc::Status)>) = 0;
+      virtual void RegisterTool(::grpc::ClientContext* context, const ::mcp::RegisterToolRequest* request, ::mcp::RegisterToolResponse* response, ::grpc::ClientUnaryReactor* reactor) = 0;
       virtual void ListTools(::grpc::ClientContext* context, const ::mcp::ListToolsRequest* request, ::mcp::ListToolsResponse* response, std::function<void(::grpc::Status)>) = 0;
+      virtual void ListTools(::grpc::ClientContext* context, const ::mcp::ListToolsRequest* request, ::mcp::ListToolsResponse* response, ::grpc::ClientUnaryReactor* reactor) = 0;
       // Prompt management
       virtual void RegisterPrompt(::grpc::ClientContext* context, const ::mcp::RegisterPromptRequest* request, ::mcp::RegisterPromptResponse* response, std::function<void(::grpc::Status)>) = 0;
+      virtual void RegisterPrompt(::grpc::ClientContext* context, const ::mcp::RegisterPromptRequest* request, ::mcp::RegisterPromptResponse* response, ::grpc::ClientUnaryReactor* reactor) = 0;
       virtual void GetPrompt(::grpc::ClientContext* context, const ::mcp::GetPromptRequest* request, ::mcp::Prompt* response, std::function<void(::grpc::Status)>) = 0;
+      virtual void GetPrompt(::grpc::ClientContext* context, const ::mcp::GetPromptRequest* request, ::mcp::Prompt* response, ::grpc::ClientUnaryReactor* reactor) = 0;
       virtual void ListPrompts(::grpc::ClientContext* context, const ::mcp::ListPromptsRequest* request, ::mcp::ListPromptsResponse* response, std::function<void(::grpc::Status)>) = 0;
+      virtual void ListPrompts(::grpc::ClientContext* context, const ::mcp::ListPromptsRequest* request, ::mcp::ListPromptsResponse* response, ::grpc::ClientUnaryReactor* reactor) = 0;
       virtual void UpdatePrompt(::grpc::ClientContext* context, const ::mcp::UpdatePromptRequest* request, ::mcp::UpdatePromptResponse* response, std::function<void(::grpc::Status)>) = 0;
+      virtual void UpdatePrompt(::grpc::ClientContext* context, const ::mcp::UpdatePromptRequest* request, ::mcp::UpdatePromptResponse* response, ::grpc::ClientUnaryReactor* reactor) = 0;
       virtual void DeletePrompt(::grpc::ClientContext* context, const ::mcp::DeletePromptRequest* request, ::mcp::DeletePromptResponse* response, std::function<void(::grpc::Status)>) = 0;
+      virtual void DeletePrompt(::grpc::ClientContext* context, const ::mcp::DeletePromptRequest* request, ::mcp::DeletePromptResponse* response, ::grpc::ClientUnaryReactor* reactor) = 0;
     };
-    virtual class experimental_async_interface* experimental_async() { return nullptr; }
-  private:
+    typedef class async_interface experimental_async_interface;
+    virtual class async_interface* async() { return nullptr; }
+    class async_interface* experimental_async() { return async(); }
+   private:
     virtual ::grpc::ClientAsyncResponseReaderInterface< ::mcp::RegisterResponse>* AsyncRegisterRaw(::grpc::ClientContext* context, const ::mcp::RegisterRequest& request, ::grpc::CompletionQueue* cq) = 0;
     virtual ::grpc::ClientAsyncResponseReaderInterface< ::mcp::RegisterResponse>* PrepareAsyncRegisterRaw(::grpc::ClientContext* context, const ::mcp::RegisterRequest& request, ::grpc::CompletionQueue* cq) = 0;
     virtual ::grpc::ClientAsyncResponseReaderInterface< ::mcp::InitializeResult>* AsyncInitializeRaw(::grpc::ClientContext* context, const ::mcp::InitializeRequest& request, ::grpc::CompletionQueue* cq) = 0;
@@ -217,7 +235,7 @@ class MCPService final {
   };
   class Stub final : public StubInterface {
    public:
-    Stub(const std::shared_ptr< ::grpc::ChannelInterface>& channel);
+    Stub(const std::shared_ptr< ::grpc::ChannelInterface>& channel, const ::grpc::StubOptions& options = ::grpc::StubOptions());
     ::grpc::Status Register(::grpc::ClientContext* context, const ::mcp::RegisterRequest& request, ::mcp::RegisterResponse* response) override;
     std::unique_ptr< ::grpc::ClientAsyncResponseReader< ::mcp::RegisterResponse>> AsyncRegister(::grpc::ClientContext* context, const ::mcp::RegisterRequest& request, ::grpc::CompletionQueue* cq) {
       return std::unique_ptr< ::grpc::ClientAsyncResponseReader< ::mcp::RegisterResponse>>(AsyncRegisterRaw(context, request, cq));
@@ -330,36 +348,52 @@ class MCPService final {
     std::unique_ptr< ::grpc::ClientAsyncResponseReader< ::mcp::DeletePromptResponse>> PrepareAsyncDeletePrompt(::grpc::ClientContext* context, const ::mcp::DeletePromptRequest& request, ::grpc::CompletionQueue* cq) {
       return std::unique_ptr< ::grpc::ClientAsyncResponseReader< ::mcp::DeletePromptResponse>>(PrepareAsyncDeletePromptRaw(context, request, cq));
     }
-    class experimental_async final :
-      public StubInterface::experimental_async_interface {
+    class async final :
+      public StubInterface::async_interface {
      public:
       void Register(::grpc::ClientContext* context, const ::mcp::RegisterRequest* request, ::mcp::RegisterResponse* response, std::function<void(::grpc::Status)>) override;
+      void Register(::grpc::ClientContext* context, const ::mcp::RegisterRequest* request, ::mcp::RegisterResponse* response, ::grpc::ClientUnaryReactor* reactor) override;
       void Initialize(::grpc::ClientContext* context, const ::mcp::InitializeRequest* request, ::mcp::InitializeResult* response, std::function<void(::grpc::Status)>) override;
+      void Initialize(::grpc::ClientContext* context, const ::mcp::InitializeRequest* request, ::mcp::InitializeResult* response, ::grpc::ClientUnaryReactor* reactor) override;
       void HandleRequest(::grpc::ClientContext* context, const ::mcp::JSONRPCRequest* request, ::mcp::JSONRPCResponse* response, std::function<void(::grpc::Status)>) override;
+      void HandleRequest(::grpc::ClientContext* context, const ::mcp::JSONRPCRequest* request, ::mcp::JSONRPCResponse* response, ::grpc::ClientUnaryReactor* reactor) override;
       void HandleNotification(::grpc::ClientContext* context, const ::mcp::JSONRPCNotification* request, ::mcp::Empty* response, std::function<void(::grpc::Status)>) override;
+      void HandleNotification(::grpc::ClientContext* context, const ::mcp::JSONRPCNotification* request, ::mcp::Empty* response, ::grpc::ClientUnaryReactor* reactor) override;
       void HandleBatchRequest(::grpc::ClientContext* context, const ::mcp::JSONRPCBatchRequest* request, ::mcp::JSONRPCBatchResponse* response, std::function<void(::grpc::Status)>) override;
+      void HandleBatchRequest(::grpc::ClientContext* context, const ::mcp::JSONRPCBatchRequest* request, ::mcp::JSONRPCBatchResponse* response, ::grpc::ClientUnaryReactor* reactor) override;
       void RegisterInputSchema(::grpc::ClientContext* context, const ::mcp::RegisterInputSchemaRequest* request, ::mcp::RegisterInputSchemaResponse* response, std::function<void(::grpc::Status)>) override;
+      void RegisterInputSchema(::grpc::ClientContext* context, const ::mcp::RegisterInputSchemaRequest* request, ::mcp::RegisterInputSchemaResponse* response, ::grpc::ClientUnaryReactor* reactor) override;
       void GetInputSchema(::grpc::ClientContext* context, const ::mcp::GetInputSchemaRequest* request, ::mcp::InputSchema* response, std::function<void(::grpc::Status)>) override;
+      void GetInputSchema(::grpc::ClientContext* context, const ::mcp::GetInputSchemaRequest* request, ::mcp::InputSchema* response, ::grpc::ClientUnaryReactor* reactor) override;
       void ListResources(::grpc::ClientContext* context, const ::mcp::ListResourcesRequest* request, ::mcp::ListResourcesResult* response, std::function<void(::grpc::Status)>) override;
+      void ListResources(::grpc::ClientContext* context, const ::mcp::ListResourcesRequest* request, ::mcp::ListResourcesResult* response, ::grpc::ClientUnaryReactor* reactor) override;
       void ReadResource(::grpc::ClientContext* context, const ::mcp::ReadResourceRequest* request, ::mcp::ReadResourceResult* response, std::function<void(::grpc::Status)>) override;
+      void ReadResource(::grpc::ClientContext* context, const ::mcp::ReadResourceRequest* request, ::mcp::ReadResourceResult* response, ::grpc::ClientUnaryReactor* reactor) override;
       void RegisterTool(::grpc::ClientContext* context, const ::mcp::RegisterToolRequest* request, ::mcp::RegisterToolResponse* response, std::function<void(::grpc::Status)>) override;
+      void RegisterTool(::grpc::ClientContext* context, const ::mcp::RegisterToolRequest* request, ::mcp::RegisterToolResponse* response, ::grpc::ClientUnaryReactor* reactor) override;
       void ListTools(::grpc::ClientContext* context, const ::mcp::ListToolsRequest* request, ::mcp::ListToolsResponse* response, std::function<void(::grpc::Status)>) override;
+      void ListTools(::grpc::ClientContext* context, const ::mcp::ListToolsRequest* request, ::mcp::ListToolsResponse* response, ::grpc::ClientUnaryReactor* reactor) override;
       void RegisterPrompt(::grpc::ClientContext* context, const ::mcp::RegisterPromptRequest* request, ::mcp::RegisterPromptResponse* response, std::function<void(::grpc::Status)>) override;
+      void RegisterPrompt(::grpc::ClientContext* context, const ::mcp::RegisterPromptRequest* request, ::mcp::RegisterPromptResponse* response, ::grpc::ClientUnaryReactor* reactor) override;
       void GetPrompt(::grpc::ClientContext* context, const ::mcp::GetPromptRequest* request, ::mcp::Prompt* response, std::function<void(::grpc::Status)>) override;
+      void GetPrompt(::grpc::ClientContext* context, const ::mcp::GetPromptRequest* request, ::mcp::Prompt* response, ::grpc::ClientUnaryReactor* reactor) override;
       void ListPrompts(::grpc::ClientContext* context, const ::mcp::ListPromptsRequest* request, ::mcp::ListPromptsResponse* response, std::function<void(::grpc::Status)>) override;
+      void ListPrompts(::grpc::ClientContext* context, const ::mcp::ListPromptsRequest* request, ::mcp::ListPromptsResponse* response, ::grpc::ClientUnaryReactor* reactor) override;
       void UpdatePrompt(::grpc::ClientContext* context, const ::mcp::UpdatePromptRequest* request, ::mcp::UpdatePromptResponse* response, std::function<void(::grpc::Status)>) override;
+      void UpdatePrompt(::grpc::ClientContext* context, const ::mcp::UpdatePromptRequest* request, ::mcp::UpdatePromptResponse* response, ::grpc::ClientUnaryReactor* reactor) override;
       void DeletePrompt(::grpc::ClientContext* context, const ::mcp::DeletePromptRequest* request, ::mcp::DeletePromptResponse* response, std::function<void(::grpc::Status)>) override;
+      void DeletePrompt(::grpc::ClientContext* context, const ::mcp::DeletePromptRequest* request, ::mcp::DeletePromptResponse* response, ::grpc::ClientUnaryReactor* reactor) override;
      private:
       friend class Stub;
-      explicit experimental_async(Stub* stub): stub_(stub) { }
+      explicit async(Stub* stub): stub_(stub) { }
       Stub* stub() { return stub_; }
       Stub* stub_;
     };
-    class experimental_async_interface* experimental_async() override { return &async_stub_; }
+    class async* async() override { return &async_stub_; }
 
    private:
     std::shared_ptr< ::grpc::ChannelInterface> channel_;
-    class experimental_async async_stub_{this};
+    class async async_stub_{this};
     ::grpc::ClientAsyncResponseReader< ::mcp::RegisterResponse>* AsyncRegisterRaw(::grpc::ClientContext* context, const ::mcp::RegisterRequest& request, ::grpc::CompletionQueue* cq) override;
     ::grpc::ClientAsyncResponseReader< ::mcp::RegisterResponse>* PrepareAsyncRegisterRaw(::grpc::ClientContext* context, const ::mcp::RegisterRequest& request, ::grpc::CompletionQueue* cq) override;
     ::grpc::ClientAsyncResponseReader< ::mcp::InitializeResult>* AsyncInitializeRaw(::grpc::ClientContext* context, const ::mcp::InitializeRequest& request, ::grpc::CompletionQueue* cq) override;
@@ -441,7 +475,7 @@ class MCPService final {
   template <class BaseClass>
   class WithAsyncMethod_Register : public BaseClass {
    private:
-    void BaseClassMustBeDerivedFromService(const Service *service) {}
+    void BaseClassMustBeDerivedFromService(const Service* /*service*/) {}
    public:
     WithAsyncMethod_Register() {
       ::grpc::Service::MarkMethodAsync(0);
@@ -450,7 +484,7 @@ class MCPService final {
       BaseClassMustBeDerivedFromService(this);
     }
     // disable synchronous version of this method
-    ::grpc::Status Register(::grpc::ServerContext* context, const ::mcp::RegisterRequest* request, ::mcp::RegisterResponse* response) override {
+    ::grpc::Status Register(::grpc::ServerContext* /*context*/, const ::mcp::RegisterRequest* /*request*/, ::mcp::RegisterResponse* /*response*/) override {
       abort();
       return ::grpc::Status(::grpc::StatusCode::UNIMPLEMENTED, "");
     }
@@ -461,7 +495,7 @@ class MCPService final {
   template <class BaseClass>
   class WithAsyncMethod_Initialize : public BaseClass {
    private:
-    void BaseClassMustBeDerivedFromService(const Service *service) {}
+    void BaseClassMustBeDerivedFromService(const Service* /*service*/) {}
    public:
     WithAsyncMethod_Initialize() {
       ::grpc::Service::MarkMethodAsync(1);
@@ -470,7 +504,7 @@ class MCPService final {
       BaseClassMustBeDerivedFromService(this);
     }
     // disable synchronous version of this method
-    ::grpc::Status Initialize(::grpc::ServerContext* context, const ::mcp::InitializeRequest* request, ::mcp::InitializeResult* response) override {
+    ::grpc::Status Initialize(::grpc::ServerContext* /*context*/, const ::mcp::InitializeRequest* /*request*/, ::mcp::InitializeResult* /*response*/) override {
       abort();
       return ::grpc::Status(::grpc::StatusCode::UNIMPLEMENTED, "");
     }
@@ -481,7 +515,7 @@ class MCPService final {
   template <class BaseClass>
   class WithAsyncMethod_HandleRequest : public BaseClass {
    private:
-    void BaseClassMustBeDerivedFromService(const Service *service) {}
+    void BaseClassMustBeDerivedFromService(const Service* /*service*/) {}
    public:
     WithAsyncMethod_HandleRequest() {
       ::grpc::Service::MarkMethodAsync(2);
@@ -490,7 +524,7 @@ class MCPService final {
       BaseClassMustBeDerivedFromService(this);
     }
     // disable synchronous version of this method
-    ::grpc::Status HandleRequest(::grpc::ServerContext* context, const ::mcp::JSONRPCRequest* request, ::mcp::JSONRPCResponse* response) override {
+    ::grpc::Status HandleRequest(::grpc::ServerContext* /*context*/, const ::mcp::JSONRPCRequest* /*request*/, ::mcp::JSONRPCResponse* /*response*/) override {
       abort();
       return ::grpc::Status(::grpc::StatusCode::UNIMPLEMENTED, "");
     }
@@ -501,7 +535,7 @@ class MCPService final {
   template <class BaseClass>
   class WithAsyncMethod_HandleNotification : public BaseClass {
    private:
-    void BaseClassMustBeDerivedFromService(const Service *service) {}
+    void BaseClassMustBeDerivedFromService(const Service* /*service*/) {}
    public:
     WithAsyncMethod_HandleNotification() {
       ::grpc::Service::MarkMethodAsync(3);
@@ -510,7 +544,7 @@ class MCPService final {
       BaseClassMustBeDerivedFromService(this);
     }
     // disable synchronous version of this method
-    ::grpc::Status HandleNotification(::grpc::ServerContext* context, const ::mcp::JSONRPCNotification* request, ::mcp::Empty* response) override {
+    ::grpc::Status HandleNotification(::grpc::ServerContext* /*context*/, const ::mcp::JSONRPCNotification* /*request*/, ::mcp::Empty* /*response*/) override {
       abort();
       return ::grpc::Status(::grpc::StatusCode::UNIMPLEMENTED, "");
     }
@@ -521,7 +555,7 @@ class MCPService final {
   template <class BaseClass>
   class WithAsyncMethod_HandleBatchRequest : public BaseClass {
    private:
-    void BaseClassMustBeDerivedFromService(const Service *service) {}
+    void BaseClassMustBeDerivedFromService(const Service* /*service*/) {}
    public:
     WithAsyncMethod_HandleBatchRequest() {
       ::grpc::Service::MarkMethodAsync(4);
@@ -530,7 +564,7 @@ class MCPService final {
       BaseClassMustBeDerivedFromService(this);
     }
     // disable synchronous version of this method
-    ::grpc::Status HandleBatchRequest(::grpc::ServerContext* context, const ::mcp::JSONRPCBatchRequest* request, ::mcp::JSONRPCBatchResponse* response) override {
+    ::grpc::Status HandleBatchRequest(::grpc::ServerContext* /*context*/, const ::mcp::JSONRPCBatchRequest* /*request*/, ::mcp::JSONRPCBatchResponse* /*response*/) override {
       abort();
       return ::grpc::Status(::grpc::StatusCode::UNIMPLEMENTED, "");
     }
@@ -541,7 +575,7 @@ class MCPService final {
   template <class BaseClass>
   class WithAsyncMethod_RegisterInputSchema : public BaseClass {
    private:
-    void BaseClassMustBeDerivedFromService(const Service *service) {}
+    void BaseClassMustBeDerivedFromService(const Service* /*service*/) {}
    public:
     WithAsyncMethod_RegisterInputSchema() {
       ::grpc::Service::MarkMethodAsync(5);
@@ -550,7 +584,7 @@ class MCPService final {
       BaseClassMustBeDerivedFromService(this);
     }
     // disable synchronous version of this method
-    ::grpc::Status RegisterInputSchema(::grpc::ServerContext* context, const ::mcp::RegisterInputSchemaRequest* request, ::mcp::RegisterInputSchemaResponse* response) override {
+    ::grpc::Status RegisterInputSchema(::grpc::ServerContext* /*context*/, const ::mcp::RegisterInputSchemaRequest* /*request*/, ::mcp::RegisterInputSchemaResponse* /*response*/) override {
       abort();
       return ::grpc::Status(::grpc::StatusCode::UNIMPLEMENTED, "");
     }
@@ -561,7 +595,7 @@ class MCPService final {
   template <class BaseClass>
   class WithAsyncMethod_GetInputSchema : public BaseClass {
    private:
-    void BaseClassMustBeDerivedFromService(const Service *service) {}
+    void BaseClassMustBeDerivedFromService(const Service* /*service*/) {}
    public:
     WithAsyncMethod_GetInputSchema() {
       ::grpc::Service::MarkMethodAsync(6);
@@ -570,7 +604,7 @@ class MCPService final {
       BaseClassMustBeDerivedFromService(this);
     }
     // disable synchronous version of this method
-    ::grpc::Status GetInputSchema(::grpc::ServerContext* context, const ::mcp::GetInputSchemaRequest* request, ::mcp::InputSchema* response) override {
+    ::grpc::Status GetInputSchema(::grpc::ServerContext* /*context*/, const ::mcp::GetInputSchemaRequest* /*request*/, ::mcp::InputSchema* /*response*/) override {
       abort();
       return ::grpc::Status(::grpc::StatusCode::UNIMPLEMENTED, "");
     }
@@ -581,7 +615,7 @@ class MCPService final {
   template <class BaseClass>
   class WithAsyncMethod_ListResources : public BaseClass {
    private:
-    void BaseClassMustBeDerivedFromService(const Service *service) {}
+    void BaseClassMustBeDerivedFromService(const Service* /*service*/) {}
    public:
     WithAsyncMethod_ListResources() {
       ::grpc::Service::MarkMethodAsync(7);
@@ -590,7 +624,7 @@ class MCPService final {
       BaseClassMustBeDerivedFromService(this);
     }
     // disable synchronous version of this method
-    ::grpc::Status ListResources(::grpc::ServerContext* context, const ::mcp::ListResourcesRequest* request, ::mcp::ListResourcesResult* response) override {
+    ::grpc::Status ListResources(::grpc::ServerContext* /*context*/, const ::mcp::ListResourcesRequest* /*request*/, ::mcp::ListResourcesResult* /*response*/) override {
       abort();
       return ::grpc::Status(::grpc::StatusCode::UNIMPLEMENTED, "");
     }
@@ -601,7 +635,7 @@ class MCPService final {
   template <class BaseClass>
   class WithAsyncMethod_ReadResource : public BaseClass {
    private:
-    void BaseClassMustBeDerivedFromService(const Service *service) {}
+    void BaseClassMustBeDerivedFromService(const Service* /*service*/) {}
    public:
     WithAsyncMethod_ReadResource() {
       ::grpc::Service::MarkMethodAsync(8);
@@ -610,7 +644,7 @@ class MCPService final {
       BaseClassMustBeDerivedFromService(this);
     }
     // disable synchronous version of this method
-    ::grpc::Status ReadResource(::grpc::ServerContext* context, const ::mcp::ReadResourceRequest* request, ::mcp::ReadResourceResult* response) override {
+    ::grpc::Status ReadResource(::grpc::ServerContext* /*context*/, const ::mcp::ReadResourceRequest* /*request*/, ::mcp::ReadResourceResult* /*response*/) override {
       abort();
       return ::grpc::Status(::grpc::StatusCode::UNIMPLEMENTED, "");
     }
@@ -621,7 +655,7 @@ class MCPService final {
   template <class BaseClass>
   class WithAsyncMethod_RegisterTool : public BaseClass {
    private:
-    void BaseClassMustBeDerivedFromService(const Service *service) {}
+    void BaseClassMustBeDerivedFromService(const Service* /*service*/) {}
    public:
     WithAsyncMethod_RegisterTool() {
       ::grpc::Service::MarkMethodAsync(9);
@@ -630,7 +664,7 @@ class MCPService final {
       BaseClassMustBeDerivedFromService(this);
     }
     // disable synchronous version of this method
-    ::grpc::Status RegisterTool(::grpc::ServerContext* context, const ::mcp::RegisterToolRequest* request, ::mcp::RegisterToolResponse* response) override {
+    ::grpc::Status RegisterTool(::grpc::ServerContext* /*context*/, const ::mcp::RegisterToolRequest* /*request*/, ::mcp::RegisterToolResponse* /*response*/) override {
       abort();
       return ::grpc::Status(::grpc::StatusCode::UNIMPLEMENTED, "");
     }
@@ -641,7 +675,7 @@ class MCPService final {
   template <class BaseClass>
   class WithAsyncMethod_ListTools : public BaseClass {
    private:
-    void BaseClassMustBeDerivedFromService(const Service *service) {}
+    void BaseClassMustBeDerivedFromService(const Service* /*service*/) {}
    public:
     WithAsyncMethod_ListTools() {
       ::grpc::Service::MarkMethodAsync(10);
@@ -650,7 +684,7 @@ class MCPService final {
       BaseClassMustBeDerivedFromService(this);
     }
     // disable synchronous version of this method
-    ::grpc::Status ListTools(::grpc::ServerContext* context, const ::mcp::ListToolsRequest* request, ::mcp::ListToolsResponse* response) override {
+    ::grpc::Status ListTools(::grpc::ServerContext* /*context*/, const ::mcp::ListToolsRequest* /*request*/, ::mcp::ListToolsResponse* /*response*/) override {
       abort();
       return ::grpc::Status(::grpc::StatusCode::UNIMPLEMENTED, "");
     }
@@ -661,7 +695,7 @@ class MCPService final {
   template <class BaseClass>
   class WithAsyncMethod_RegisterPrompt : public BaseClass {
    private:
-    void BaseClassMustBeDerivedFromService(const Service *service) {}
+    void BaseClassMustBeDerivedFromService(const Service* /*service*/) {}
    public:
     WithAsyncMethod_RegisterPrompt() {
       ::grpc::Service::MarkMethodAsync(11);
@@ -670,7 +704,7 @@ class MCPService final {
       BaseClassMustBeDerivedFromService(this);
     }
     // disable synchronous version of this method
-    ::grpc::Status RegisterPrompt(::grpc::ServerContext* context, const ::mcp::RegisterPromptRequest* request, ::mcp::RegisterPromptResponse* response) override {
+    ::grpc::Status RegisterPrompt(::grpc::ServerContext* /*context*/, const ::mcp::RegisterPromptRequest* /*request*/, ::mcp::RegisterPromptResponse* /*response*/) override {
       abort();
       return ::grpc::Status(::grpc::StatusCode::UNIMPLEMENTED, "");
     }
@@ -681,7 +715,7 @@ class MCPService final {
   template <class BaseClass>
   class WithAsyncMethod_GetPrompt : public BaseClass {
    private:
-    void BaseClassMustBeDerivedFromService(const Service *service) {}
+    void BaseClassMustBeDerivedFromService(const Service* /*service*/) {}
    public:
     WithAsyncMethod_GetPrompt() {
       ::grpc::Service::MarkMethodAsync(12);
@@ -690,7 +724,7 @@ class MCPService final {
       BaseClassMustBeDerivedFromService(this);
     }
     // disable synchronous version of this method
-    ::grpc::Status GetPrompt(::grpc::ServerContext* context, const ::mcp::GetPromptRequest* request, ::mcp::Prompt* response) override {
+    ::grpc::Status GetPrompt(::grpc::ServerContext* /*context*/, const ::mcp::GetPromptRequest* /*request*/, ::mcp::Prompt* /*response*/) override {
       abort();
       return ::grpc::Status(::grpc::StatusCode::UNIMPLEMENTED, "");
     }
@@ -701,7 +735,7 @@ class MCPService final {
   template <class BaseClass>
   class WithAsyncMethod_ListPrompts : public BaseClass {
    private:
-    void BaseClassMustBeDerivedFromService(const Service *service) {}
+    void BaseClassMustBeDerivedFromService(const Service* /*service*/) {}
    public:
     WithAsyncMethod_ListPrompts() {
       ::grpc::Service::MarkMethodAsync(13);
@@ -710,7 +744,7 @@ class MCPService final {
       BaseClassMustBeDerivedFromService(this);
     }
     // disable synchronous version of this method
-    ::grpc::Status ListPrompts(::grpc::ServerContext* context, const ::mcp::ListPromptsRequest* request, ::mcp::ListPromptsResponse* response) override {
+    ::grpc::Status ListPrompts(::grpc::ServerContext* /*context*/, const ::mcp::ListPromptsRequest* /*request*/, ::mcp::ListPromptsResponse* /*response*/) override {
       abort();
       return ::grpc::Status(::grpc::StatusCode::UNIMPLEMENTED, "");
     }
@@ -721,7 +755,7 @@ class MCPService final {
   template <class BaseClass>
   class WithAsyncMethod_UpdatePrompt : public BaseClass {
    private:
-    void BaseClassMustBeDerivedFromService(const Service *service) {}
+    void BaseClassMustBeDerivedFromService(const Service* /*service*/) {}
    public:
     WithAsyncMethod_UpdatePrompt() {
       ::grpc::Service::MarkMethodAsync(14);
@@ -730,7 +764,7 @@ class MCPService final {
       BaseClassMustBeDerivedFromService(this);
     }
     // disable synchronous version of this method
-    ::grpc::Status UpdatePrompt(::grpc::ServerContext* context, const ::mcp::UpdatePromptRequest* request, ::mcp::UpdatePromptResponse* response) override {
+    ::grpc::Status UpdatePrompt(::grpc::ServerContext* /*context*/, const ::mcp::UpdatePromptRequest* /*request*/, ::mcp::UpdatePromptResponse* /*response*/) override {
       abort();
       return ::grpc::Status(::grpc::StatusCode::UNIMPLEMENTED, "");
     }
@@ -741,7 +775,7 @@ class MCPService final {
   template <class BaseClass>
   class WithAsyncMethod_DeletePrompt : public BaseClass {
    private:
-    void BaseClassMustBeDerivedFromService(const Service *service) {}
+    void BaseClassMustBeDerivedFromService(const Service* /*service*/) {}
    public:
     WithAsyncMethod_DeletePrompt() {
       ::grpc::Service::MarkMethodAsync(15);
@@ -750,7 +784,7 @@ class MCPService final {
       BaseClassMustBeDerivedFromService(this);
     }
     // disable synchronous version of this method
-    ::grpc::Status DeletePrompt(::grpc::ServerContext* context, const ::mcp::DeletePromptRequest* request, ::mcp::DeletePromptResponse* response) override {
+    ::grpc::Status DeletePrompt(::grpc::ServerContext* /*context*/, const ::mcp::DeletePromptRequest* /*request*/, ::mcp::DeletePromptResponse* /*response*/) override {
       abort();
       return ::grpc::Status(::grpc::StatusCode::UNIMPLEMENTED, "");
     }
@@ -760,9 +794,443 @@ class MCPService final {
   };
   typedef WithAsyncMethod_Register<WithAsyncMethod_Initialize<WithAsyncMethod_HandleRequest<WithAsyncMethod_HandleNotification<WithAsyncMethod_HandleBatchRequest<WithAsyncMethod_RegisterInputSchema<WithAsyncMethod_GetInputSchema<WithAsyncMethod_ListResources<WithAsyncMethod_ReadResource<WithAsyncMethod_RegisterTool<WithAsyncMethod_ListTools<WithAsyncMethod_RegisterPrompt<WithAsyncMethod_GetPrompt<WithAsyncMethod_ListPrompts<WithAsyncMethod_UpdatePrompt<WithAsyncMethod_DeletePrompt<Service > > > > > > > > > > > > > > > > AsyncService;
   template <class BaseClass>
+  class WithCallbackMethod_Register : public BaseClass {
+   private:
+    void BaseClassMustBeDerivedFromService(const Service* /*service*/) {}
+   public:
+    WithCallbackMethod_Register() {
+      ::grpc::Service::MarkMethodCallback(0,
+          new ::grpc::internal::CallbackUnaryHandler< ::mcp::RegisterRequest, ::mcp::RegisterResponse>(
+            [this](
+                   ::grpc::CallbackServerContext* context, const ::mcp::RegisterRequest* request, ::mcp::RegisterResponse* response) { return this->Register(context, request, response); }));}
+    void SetMessageAllocatorFor_Register(
+        ::grpc::MessageAllocator< ::mcp::RegisterRequest, ::mcp::RegisterResponse>* allocator) {
+      ::grpc::internal::MethodHandler* const handler = ::grpc::Service::GetHandler(0);
+      static_cast<::grpc::internal::CallbackUnaryHandler< ::mcp::RegisterRequest, ::mcp::RegisterResponse>*>(handler)
+              ->SetMessageAllocator(allocator);
+    }
+    ~WithCallbackMethod_Register() override {
+      BaseClassMustBeDerivedFromService(this);
+    }
+    // disable synchronous version of this method
+    ::grpc::Status Register(::grpc::ServerContext* /*context*/, const ::mcp::RegisterRequest* /*request*/, ::mcp::RegisterResponse* /*response*/) override {
+      abort();
+      return ::grpc::Status(::grpc::StatusCode::UNIMPLEMENTED, "");
+    }
+    virtual ::grpc::ServerUnaryReactor* Register(
+      ::grpc::CallbackServerContext* /*context*/, const ::mcp::RegisterRequest* /*request*/, ::mcp::RegisterResponse* /*response*/)  { return nullptr; }
+  };
+  template <class BaseClass>
+  class WithCallbackMethod_Initialize : public BaseClass {
+   private:
+    void BaseClassMustBeDerivedFromService(const Service* /*service*/) {}
+   public:
+    WithCallbackMethod_Initialize() {
+      ::grpc::Service::MarkMethodCallback(1,
+          new ::grpc::internal::CallbackUnaryHandler< ::mcp::InitializeRequest, ::mcp::InitializeResult>(
+            [this](
+                   ::grpc::CallbackServerContext* context, const ::mcp::InitializeRequest* request, ::mcp::InitializeResult* response) { return this->Initialize(context, request, response); }));}
+    void SetMessageAllocatorFor_Initialize(
+        ::grpc::MessageAllocator< ::mcp::InitializeRequest, ::mcp::InitializeResult>* allocator) {
+      ::grpc::internal::MethodHandler* const handler = ::grpc::Service::GetHandler(1);
+      static_cast<::grpc::internal::CallbackUnaryHandler< ::mcp::InitializeRequest, ::mcp::InitializeResult>*>(handler)
+              ->SetMessageAllocator(allocator);
+    }
+    ~WithCallbackMethod_Initialize() override {
+      BaseClassMustBeDerivedFromService(this);
+    }
+    // disable synchronous version of this method
+    ::grpc::Status Initialize(::grpc::ServerContext* /*context*/, const ::mcp::InitializeRequest* /*request*/, ::mcp::InitializeResult* /*response*/) override {
+      abort();
+      return ::grpc::Status(::grpc::StatusCode::UNIMPLEMENTED, "");
+    }
+    virtual ::grpc::ServerUnaryReactor* Initialize(
+      ::grpc::CallbackServerContext* /*context*/, const ::mcp::InitializeRequest* /*request*/, ::mcp::InitializeResult* /*response*/)  { return nullptr; }
+  };
+  template <class BaseClass>
+  class WithCallbackMethod_HandleRequest : public BaseClass {
+   private:
+    void BaseClassMustBeDerivedFromService(const Service* /*service*/) {}
+   public:
+    WithCallbackMethod_HandleRequest() {
+      ::grpc::Service::MarkMethodCallback(2,
+          new ::grpc::internal::CallbackUnaryHandler< ::mcp::JSONRPCRequest, ::mcp::JSONRPCResponse>(
+            [this](
+                   ::grpc::CallbackServerContext* context, const ::mcp::JSONRPCRequest* request, ::mcp::JSONRPCResponse* response) { return this->HandleRequest(context, request, response); }));}
+    void SetMessageAllocatorFor_HandleRequest(
+        ::grpc::MessageAllocator< ::mcp::JSONRPCRequest, ::mcp::JSONRPCResponse>* allocator) {
+      ::grpc::internal::MethodHandler* const handler = ::grpc::Service::GetHandler(2);
+      static_cast<::grpc::internal::CallbackUnaryHandler< ::mcp::JSONRPCRequest, ::mcp::JSONRPCResponse>*>(handler)
+              ->SetMessageAllocator(allocator);
+    }
+    ~WithCallbackMethod_HandleRequest() override {
+      BaseClassMustBeDerivedFromService(this);
+    }
+    // disable synchronous version of this method
+    ::grpc::Status HandleRequest(::grpc::ServerContext* /*context*/, const ::mcp::JSONRPCRequest* /*request*/, ::mcp::JSONRPCResponse* /*response*/) override {
+      abort();
+      return ::grpc::Status(::grpc::StatusCode::UNIMPLEMENTED, "");
+    }
+    virtual ::grpc::ServerUnaryReactor* HandleRequest(
+      ::grpc::CallbackServerContext* /*context*/, const ::mcp::JSONRPCRequest* /*request*/, ::mcp::JSONRPCResponse* /*response*/)  { return nullptr; }
+  };
+  template <class BaseClass>
+  class WithCallbackMethod_HandleNotification : public BaseClass {
+   private:
+    void BaseClassMustBeDerivedFromService(const Service* /*service*/) {}
+   public:
+    WithCallbackMethod_HandleNotification() {
+      ::grpc::Service::MarkMethodCallback(3,
+          new ::grpc::internal::CallbackUnaryHandler< ::mcp::JSONRPCNotification, ::mcp::Empty>(
+            [this](
+                   ::grpc::CallbackServerContext* context, const ::mcp::JSONRPCNotification* request, ::mcp::Empty* response) { return this->HandleNotification(context, request, response); }));}
+    void SetMessageAllocatorFor_HandleNotification(
+        ::grpc::MessageAllocator< ::mcp::JSONRPCNotification, ::mcp::Empty>* allocator) {
+      ::grpc::internal::MethodHandler* const handler = ::grpc::Service::GetHandler(3);
+      static_cast<::grpc::internal::CallbackUnaryHandler< ::mcp::JSONRPCNotification, ::mcp::Empty>*>(handler)
+              ->SetMessageAllocator(allocator);
+    }
+    ~WithCallbackMethod_HandleNotification() override {
+      BaseClassMustBeDerivedFromService(this);
+    }
+    // disable synchronous version of this method
+    ::grpc::Status HandleNotification(::grpc::ServerContext* /*context*/, const ::mcp::JSONRPCNotification* /*request*/, ::mcp::Empty* /*response*/) override {
+      abort();
+      return ::grpc::Status(::grpc::StatusCode::UNIMPLEMENTED, "");
+    }
+    virtual ::grpc::ServerUnaryReactor* HandleNotification(
+      ::grpc::CallbackServerContext* /*context*/, const ::mcp::JSONRPCNotification* /*request*/, ::mcp::Empty* /*response*/)  { return nullptr; }
+  };
+  template <class BaseClass>
+  class WithCallbackMethod_HandleBatchRequest : public BaseClass {
+   private:
+    void BaseClassMustBeDerivedFromService(const Service* /*service*/) {}
+   public:
+    WithCallbackMethod_HandleBatchRequest() {
+      ::grpc::Service::MarkMethodCallback(4,
+          new ::grpc::internal::CallbackUnaryHandler< ::mcp::JSONRPCBatchRequest, ::mcp::JSONRPCBatchResponse>(
+            [this](
+                   ::grpc::CallbackServerContext* context, const ::mcp::JSONRPCBatchRequest* request, ::mcp::JSONRPCBatchResponse* response) { return this->HandleBatchRequest(context, request, response); }));}
+    void SetMessageAllocatorFor_HandleBatchRequest(
+        ::grpc::MessageAllocator< ::mcp::JSONRPCBatchRequest, ::mcp::JSONRPCBatchResponse>* allocator) {
+      ::grpc::internal::MethodHandler* const handler = ::grpc::Service::GetHandler(4);
+      static_cast<::grpc::internal::CallbackUnaryHandler< ::mcp::JSONRPCBatchRequest, ::mcp::JSONRPCBatchResponse>*>(handler)
+              ->SetMessageAllocator(allocator);
+    }
+    ~WithCallbackMethod_HandleBatchRequest() override {
+      BaseClassMustBeDerivedFromService(this);
+    }
+    // disable synchronous version of this method
+    ::grpc::Status HandleBatchRequest(::grpc::ServerContext* /*context*/, const ::mcp::JSONRPCBatchRequest* /*request*/, ::mcp::JSONRPCBatchResponse* /*response*/) override {
+      abort();
+      return ::grpc::Status(::grpc::StatusCode::UNIMPLEMENTED, "");
+    }
+    virtual ::grpc::ServerUnaryReactor* HandleBatchRequest(
+      ::grpc::CallbackServerContext* /*context*/, const ::mcp::JSONRPCBatchRequest* /*request*/, ::mcp::JSONRPCBatchResponse* /*response*/)  { return nullptr; }
+  };
+  template <class BaseClass>
+  class WithCallbackMethod_RegisterInputSchema : public BaseClass {
+   private:
+    void BaseClassMustBeDerivedFromService(const Service* /*service*/) {}
+   public:
+    WithCallbackMethod_RegisterInputSchema() {
+      ::grpc::Service::MarkMethodCallback(5,
+          new ::grpc::internal::CallbackUnaryHandler< ::mcp::RegisterInputSchemaRequest, ::mcp::RegisterInputSchemaResponse>(
+            [this](
+                   ::grpc::CallbackServerContext* context, const ::mcp::RegisterInputSchemaRequest* request, ::mcp::RegisterInputSchemaResponse* response) { return this->RegisterInputSchema(context, request, response); }));}
+    void SetMessageAllocatorFor_RegisterInputSchema(
+        ::grpc::MessageAllocator< ::mcp::RegisterInputSchemaRequest, ::mcp::RegisterInputSchemaResponse>* allocator) {
+      ::grpc::internal::MethodHandler* const handler = ::grpc::Service::GetHandler(5);
+      static_cast<::grpc::internal::CallbackUnaryHandler< ::mcp::RegisterInputSchemaRequest, ::mcp::RegisterInputSchemaResponse>*>(handler)
+              ->SetMessageAllocator(allocator);
+    }
+    ~WithCallbackMethod_RegisterInputSchema() override {
+      BaseClassMustBeDerivedFromService(this);
+    }
+    // disable synchronous version of this method
+    ::grpc::Status RegisterInputSchema(::grpc::ServerContext* /*context*/, const ::mcp::RegisterInputSchemaRequest* /*request*/, ::mcp::RegisterInputSchemaResponse* /*response*/) override {
+      abort();
+      return ::grpc::Status(::grpc::StatusCode::UNIMPLEMENTED, "");
+    }
+    virtual ::grpc::ServerUnaryReactor* RegisterInputSchema(
+      ::grpc::CallbackServerContext* /*context*/, const ::mcp::RegisterInputSchemaRequest* /*request*/, ::mcp::RegisterInputSchemaResponse* /*response*/)  { return nullptr; }
+  };
+  template <class BaseClass>
+  class WithCallbackMethod_GetInputSchema : public BaseClass {
+   private:
+    void BaseClassMustBeDerivedFromService(const Service* /*service*/) {}
+   public:
+    WithCallbackMethod_GetInputSchema() {
+      ::grpc::Service::MarkMethodCallback(6,
+          new ::grpc::internal::CallbackUnaryHandler< ::mcp::GetInputSchemaRequest, ::mcp::InputSchema>(
+            [this](
+                   ::grpc::CallbackServerContext* context, const ::mcp::GetInputSchemaRequest* request, ::mcp::InputSchema* response) { return this->GetInputSchema(context, request, response); }));}
+    void SetMessageAllocatorFor_GetInputSchema(
+        ::grpc::MessageAllocator< ::mcp::GetInputSchemaRequest, ::mcp::InputSchema>* allocator) {
+      ::grpc::internal::MethodHandler* const handler = ::grpc::Service::GetHandler(6);
+      static_cast<::grpc::internal::CallbackUnaryHandler< ::mcp::GetInputSchemaRequest, ::mcp::InputSchema>*>(handler)
+              ->SetMessageAllocator(allocator);
+    }
+    ~WithCallbackMethod_GetInputSchema() override {
+      BaseClassMustBeDerivedFromService(this);
+    }
+    // disable synchronous version of this method
+    ::grpc::Status GetInputSchema(::grpc::ServerContext* /*context*/, const ::mcp::GetInputSchemaRequest* /*request*/, ::mcp::InputSchema* /*response*/) override {
+      abort();
+      return ::grpc::Status(::grpc::StatusCode::UNIMPLEMENTED, "");
+    }
+    virtual ::grpc::ServerUnaryReactor* GetInputSchema(
+      ::grpc::CallbackServerContext* /*context*/, const ::mcp::GetInputSchemaRequest* /*request*/, ::mcp::InputSchema* /*response*/)  { return nullptr; }
+  };
+  template <class BaseClass>
+  class WithCallbackMethod_ListResources : public BaseClass {
+   private:
+    void BaseClassMustBeDerivedFromService(const Service* /*service*/) {}
+   public:
+    WithCallbackMethod_ListResources() {
+      ::grpc::Service::MarkMethodCallback(7,
+          new ::grpc::internal::CallbackUnaryHandler< ::mcp::ListResourcesRequest, ::mcp::ListResourcesResult>(
+            [this](
+                   ::grpc::CallbackServerContext* context, const ::mcp::ListResourcesRequest* request, ::mcp::ListResourcesResult* response) { return this->ListResources(context, request, response); }));}
+    void SetMessageAllocatorFor_ListResources(
+        ::grpc::MessageAllocator< ::mcp::ListResourcesRequest, ::mcp::ListResourcesResult>* allocator) {
+      ::grpc::internal::MethodHandler* const handler = ::grpc::Service::GetHandler(7);
+      static_cast<::grpc::internal::CallbackUnaryHandler< ::mcp::ListResourcesRequest, ::mcp::ListResourcesResult>*>(handler)
+              ->SetMessageAllocator(allocator);
+    }
+    ~WithCallbackMethod_ListResources() override {
+      BaseClassMustBeDerivedFromService(this);
+    }
+    // disable synchronous version of this method
+    ::grpc::Status ListResources(::grpc::ServerContext* /*context*/, const ::mcp::ListResourcesRequest* /*request*/, ::mcp::ListResourcesResult* /*response*/) override {
+      abort();
+      return ::grpc::Status(::grpc::StatusCode::UNIMPLEMENTED, "");
+    }
+    virtual ::grpc::ServerUnaryReactor* ListResources(
+      ::grpc::CallbackServerContext* /*context*/, const ::mcp::ListResourcesRequest* /*request*/, ::mcp::ListResourcesResult* /*response*/)  { return nullptr; }
+  };
+  template <class BaseClass>
+  class WithCallbackMethod_ReadResource : public BaseClass {
+   private:
+    void BaseClassMustBeDerivedFromService(const Service* /*service*/) {}
+   public:
+    WithCallbackMethod_ReadResource() {
+      ::grpc::Service::MarkMethodCallback(8,
+          new ::grpc::internal::CallbackUnaryHandler< ::mcp::ReadResourceRequest, ::mcp::ReadResourceResult>(
+            [this](
+                   ::grpc::CallbackServerContext* context, const ::mcp::ReadResourceRequest* request, ::mcp::ReadResourceResult* response) { return this->ReadResource(context, request, response); }));}
+    void SetMessageAllocatorFor_ReadResource(
+        ::grpc::MessageAllocator< ::mcp::ReadResourceRequest, ::mcp::ReadResourceResult>* allocator) {
+      ::grpc::internal::MethodHandler* const handler = ::grpc::Service::GetHandler(8);
+      static_cast<::grpc::internal::CallbackUnaryHandler< ::mcp::ReadResourceRequest, ::mcp::ReadResourceResult>*>(handler)
+              ->SetMessageAllocator(allocator);
+    }
+    ~WithCallbackMethod_ReadResource() override {
+      BaseClassMustBeDerivedFromService(this);
+    }
+    // disable synchronous version of this method
+    ::grpc::Status ReadResource(::grpc::ServerContext* /*context*/, const ::mcp::ReadResourceRequest* /*request*/, ::mcp::ReadResourceResult* /*response*/) override {
+      abort();
+      return ::grpc::Status(::grpc::StatusCode::UNIMPLEMENTED, "");
+    }
+    virtual ::grpc::ServerUnaryReactor* ReadResource(
+      ::grpc::CallbackServerContext* /*context*/, const ::mcp::ReadResourceRequest* /*request*/, ::mcp::ReadResourceResult* /*response*/)  { return nullptr; }
+  };
+  template <class BaseClass>
+  class WithCallbackMethod_RegisterTool : public BaseClass {
+   private:
+    void BaseClassMustBeDerivedFromService(const Service* /*service*/) {}
+   public:
+    WithCallbackMethod_RegisterTool() {
+      ::grpc::Service::MarkMethodCallback(9,
+          new ::grpc::internal::CallbackUnaryHandler< ::mcp::RegisterToolRequest, ::mcp::RegisterToolResponse>(
+            [this](
+                   ::grpc::CallbackServerContext* context, const ::mcp::RegisterToolRequest* request, ::mcp::RegisterToolResponse* response) { return this->RegisterTool(context, request, response); }));}
+    void SetMessageAllocatorFor_RegisterTool(
+        ::grpc::MessageAllocator< ::mcp::RegisterToolRequest, ::mcp::RegisterToolResponse>* allocator) {
+      ::grpc::internal::MethodHandler* const handler = ::grpc::Service::GetHandler(9);
+      static_cast<::grpc::internal::CallbackUnaryHandler< ::mcp::RegisterToolRequest, ::mcp::RegisterToolResponse>*>(handler)
+              ->SetMessageAllocator(allocator);
+    }
+    ~WithCallbackMethod_RegisterTool() override {
+      BaseClassMustBeDerivedFromService(this);
+    }
+    // disable synchronous version of this method
+    ::grpc::Status RegisterTool(::grpc::ServerContext* /*context*/, const ::mcp::RegisterToolRequest* /*request*/, ::mcp::RegisterToolResponse* /*response*/) override {
+      abort();
+      return ::grpc::Status(::grpc::StatusCode::UNIMPLEMENTED, "");
+    }
+    virtual ::grpc::ServerUnaryReactor* RegisterTool(
+      ::grpc::CallbackServerContext* /*context*/, const ::mcp::RegisterToolRequest* /*request*/, ::mcp::RegisterToolResponse* /*response*/)  { return nullptr; }
+  };
+  template <class BaseClass>
+  class WithCallbackMethod_ListTools : public BaseClass {
+   private:
+    void BaseClassMustBeDerivedFromService(const Service* /*service*/) {}
+   public:
+    WithCallbackMethod_ListTools() {
+      ::grpc::Service::MarkMethodCallback(10,
+          new ::grpc::internal::CallbackUnaryHandler< ::mcp::ListToolsRequest, ::mcp::ListToolsResponse>(
+            [this](
+                   ::grpc::CallbackServerContext* context, const ::mcp::ListToolsRequest* request, ::mcp::ListToolsResponse* response) { return this->ListTools(context, request, response); }));}
+    void SetMessageAllocatorFor_ListTools(
+        ::grpc::MessageAllocator< ::mcp::ListToolsRequest, ::mcp::ListToolsResponse>* allocator) {
+      ::grpc::internal::MethodHandler* const handler = ::grpc::Service::GetHandler(10);
+      static_cast<::grpc::internal::CallbackUnaryHandler< ::mcp::ListToolsRequest, ::mcp::ListToolsResponse>*>(handler)
+              ->SetMessageAllocator(allocator);
+    }
+    ~WithCallbackMethod_ListTools() override {
+      BaseClassMustBeDerivedFromService(this);
+    }
+    // disable synchronous version of this method
+    ::grpc::Status ListTools(::grpc::ServerContext* /*context*/, const ::mcp::ListToolsRequest* /*request*/, ::mcp::ListToolsResponse* /*response*/) override {
+      abort();
+      return ::grpc::Status(::grpc::StatusCode::UNIMPLEMENTED, "");
+    }
+    virtual ::grpc::ServerUnaryReactor* ListTools(
+      ::grpc::CallbackServerContext* /*context*/, const ::mcp::ListToolsRequest* /*request*/, ::mcp::ListToolsResponse* /*response*/)  { return nullptr; }
+  };
+  template <class BaseClass>
+  class WithCallbackMethod_RegisterPrompt : public BaseClass {
+   private:
+    void BaseClassMustBeDerivedFromService(const Service* /*service*/) {}
+   public:
+    WithCallbackMethod_RegisterPrompt() {
+      ::grpc::Service::MarkMethodCallback(11,
+          new ::grpc::internal::CallbackUnaryHandler< ::mcp::RegisterPromptRequest, ::mcp::RegisterPromptResponse>(
+            [this](
+                   ::grpc::CallbackServerContext* context, const ::mcp::RegisterPromptRequest* request, ::mcp::RegisterPromptResponse* response) { return this->RegisterPrompt(context, request, response); }));}
+    void SetMessageAllocatorFor_RegisterPrompt(
+        ::grpc::MessageAllocator< ::mcp::RegisterPromptRequest, ::mcp::RegisterPromptResponse>* allocator) {
+      ::grpc::internal::MethodHandler* const handler = ::grpc::Service::GetHandler(11);
+      static_cast<::grpc::internal::CallbackUnaryHandler< ::mcp::RegisterPromptRequest, ::mcp::RegisterPromptResponse>*>(handler)
+              ->SetMessageAllocator(allocator);
+    }
+    ~WithCallbackMethod_RegisterPrompt() override {
+      BaseClassMustBeDerivedFromService(this);
+    }
+    // disable synchronous version of this method
+    ::grpc::Status RegisterPrompt(::grpc::ServerContext* /*context*/, const ::mcp::RegisterPromptRequest* /*request*/, ::mcp::RegisterPromptResponse* /*response*/) override {
+      abort();
+      return ::grpc::Status(::grpc::StatusCode::UNIMPLEMENTED, "");
+    }
+    virtual ::grpc::ServerUnaryReactor* RegisterPrompt(
+      ::grpc::CallbackServerContext* /*context*/, const ::mcp::RegisterPromptRequest* /*request*/, ::mcp::RegisterPromptResponse* /*response*/)  { return nullptr; }
+  };
+  template <class BaseClass>
+  class WithCallbackMethod_GetPrompt : public BaseClass {
+   private:
+    void BaseClassMustBeDerivedFromService(const Service* /*service*/) {}
+   public:
+    WithCallbackMethod_GetPrompt() {
+      ::grpc::Service::MarkMethodCallback(12,
+          new ::grpc::internal::CallbackUnaryHandler< ::mcp::GetPromptRequest, ::mcp::Prompt>(
+            [this](
+                   ::grpc::CallbackServerContext* context, const ::mcp::GetPromptRequest* request, ::mcp::Prompt* response) { return this->GetPrompt(context, request, response); }));}
+    void SetMessageAllocatorFor_GetPrompt(
+        ::grpc::MessageAllocator< ::mcp::GetPromptRequest, ::mcp::Prompt>* allocator) {
+      ::grpc::internal::MethodHandler* const handler = ::grpc::Service::GetHandler(12);
+      static_cast<::grpc::internal::CallbackUnaryHandler< ::mcp::GetPromptRequest, ::mcp::Prompt>*>(handler)
+              ->SetMessageAllocator(allocator);
+    }
+    ~WithCallbackMethod_GetPrompt() override {
+      BaseClassMustBeDerivedFromService(this);
+    }
+    // disable synchronous version of this method
+    ::grpc::Status GetPrompt(::grpc::ServerContext* /*context*/, const ::mcp::GetPromptRequest* /*request*/, ::mcp::Prompt* /*response*/) override {
+      abort();
+      return ::grpc::Status(::grpc::StatusCode::UNIMPLEMENTED, "");
+    }
+    virtual ::grpc::ServerUnaryReactor* GetPrompt(
+      ::grpc::CallbackServerContext* /*context*/, const ::mcp::GetPromptRequest* /*request*/, ::mcp::Prompt* /*response*/)  { return nullptr; }
+  };
+  template <class BaseClass>
+  class WithCallbackMethod_ListPrompts : public BaseClass {
+   private:
+    void BaseClassMustBeDerivedFromService(const Service* /*service*/) {}
+   public:
+    WithCallbackMethod_ListPrompts() {
+      ::grpc::Service::MarkMethodCallback(13,
+          new ::grpc::internal::CallbackUnaryHandler< ::mcp::ListPromptsRequest, ::mcp::ListPromptsResponse>(
+            [this](
+                   ::grpc::CallbackServerContext* context, const ::mcp::ListPromptsRequest* request, ::mcp::ListPromptsResponse* response) { return this->ListPrompts(context, request, response); }));}
+    void SetMessageAllocatorFor_ListPrompts(
+        ::grpc::MessageAllocator< ::mcp::ListPromptsRequest, ::mcp::ListPromptsResponse>* allocator) {
+      ::grpc::internal::MethodHandler* const handler = ::grpc::Service::GetHandler(13);
+      static_cast<::grpc::internal::CallbackUnaryHandler< ::mcp::ListPromptsRequest, ::mcp::ListPromptsResponse>*>(handler)
+              ->SetMessageAllocator(allocator);
+    }
+    ~WithCallbackMethod_ListPrompts() override {
+      BaseClassMustBeDerivedFromService(this);
+    }
+    // disable synchronous version of this method
+    ::grpc::Status ListPrompts(::grpc::ServerContext* /*context*/, const ::mcp::ListPromptsRequest* /*request*/, ::mcp::ListPromptsResponse* /*response*/) override {
+      abort();
+      return ::grpc::Status(::grpc::StatusCode::UNIMPLEMENTED, "");
+    }
+    virtual ::grpc::ServerUnaryReactor* ListPrompts(
+      ::grpc::CallbackServerContext* /*context*/, const ::mcp::ListPromptsRequest* /*request*/, ::mcp::ListPromptsResponse* /*response*/)  { return nullptr; }
+  };
+  template <class BaseClass>
+  class WithCallbackMethod_UpdatePrompt : public BaseClass {
+   private:
+    void BaseClassMustBeDerivedFromService(const Service* /*service*/) {}
+   public:
+    WithCallbackMethod_UpdatePrompt() {
+      ::grpc::Service::MarkMethodCallback(14,
+          new ::grpc::internal::CallbackUnaryHandler< ::mcp::UpdatePromptRequest, ::mcp::UpdatePromptResponse>(
+            [this](
+                   ::grpc::CallbackServerContext* context, const ::mcp::UpdatePromptRequest* request, ::mcp::UpdatePromptResponse* response) { return this->UpdatePrompt(context, request, response); }));}
+    void SetMessageAllocatorFor_UpdatePrompt(
+        ::grpc::MessageAllocator< ::mcp::UpdatePromptRequest, ::mcp::UpdatePromptResponse>* allocator) {
+      ::grpc::internal::MethodHandler* const handler = ::grpc::Service::GetHandler(14);
+      static_cast<::grpc::internal::CallbackUnaryHandler< ::mcp::UpdatePromptRequest, ::mcp::UpdatePromptResponse>*>(handler)
+              ->SetMessageAllocator(allocator);
+    }
+    ~WithCallbackMethod_UpdatePrompt() override {
+      BaseClassMustBeDerivedFromService(this);
+    }
+    // disable synchronous version of this method
+    ::grpc::Status UpdatePrompt(::grpc::ServerContext* /*context*/, const ::mcp::UpdatePromptRequest* /*request*/, ::mcp::UpdatePromptResponse* /*response*/) override {
+      abort();
+      return ::grpc::Status(::grpc::StatusCode::UNIMPLEMENTED, "");
+    }
+    virtual ::grpc::ServerUnaryReactor* UpdatePrompt(
+      ::grpc::CallbackServerContext* /*context*/, const ::mcp::UpdatePromptRequest* /*request*/, ::mcp::UpdatePromptResponse* /*response*/)  { return nullptr; }
+  };
+  template <class BaseClass>
+  class WithCallbackMethod_DeletePrompt : public BaseClass {
+   private:
+    void BaseClassMustBeDerivedFromService(const Service* /*service*/) {}
+   public:
+    WithCallbackMethod_DeletePrompt() {
+      ::grpc::Service::MarkMethodCallback(15,
+          new ::grpc::internal::CallbackUnaryHandler< ::mcp::DeletePromptRequest, ::mcp::DeletePromptResponse>(
+            [this](
+                   ::grpc::CallbackServerContext* context, const ::mcp::DeletePromptRequest* request, ::mcp::DeletePromptResponse* response) { return this->DeletePrompt(context, request, response); }));}
+    void SetMessageAllocatorFor_DeletePrompt(
+        ::grpc::MessageAllocator< ::mcp::DeletePromptRequest, ::mcp::DeletePromptResponse>* allocator) {
+      ::grpc::internal::MethodHandler* const handler = ::grpc::Service::GetHandler(15);
+      static_cast<::grpc::internal::CallbackUnaryHandler< ::mcp::DeletePromptRequest, ::mcp::DeletePromptResponse>*>(handler)
+              ->SetMessageAllocator(allocator);
+    }
+    ~WithCallbackMethod_DeletePrompt() override {
+      BaseClassMustBeDerivedFromService(this);
+    }
+    // disable synchronous version of this method
+    ::grpc::Status DeletePrompt(::grpc::ServerContext* /*context*/, const ::mcp::DeletePromptRequest* /*request*/, ::mcp::DeletePromptResponse* /*response*/) override {
+      abort();
+      return ::grpc::Status(::grpc::StatusCode::UNIMPLEMENTED, "");
+    }
+    virtual ::grpc::ServerUnaryReactor* DeletePrompt(
+      ::grpc::CallbackServerContext* /*context*/, const ::mcp::DeletePromptRequest* /*request*/, ::mcp::DeletePromptResponse* /*response*/)  { return nullptr; }
+  };
+  typedef WithCallbackMethod_Register<WithCallbackMethod_Initialize<WithCallbackMethod_HandleRequest<WithCallbackMethod_HandleNotification<WithCallbackMethod_HandleBatchRequest<WithCallbackMethod_RegisterInputSchema<WithCallbackMethod_GetInputSchema<WithCallbackMethod_ListResources<WithCallbackMethod_ReadResource<WithCallbackMethod_RegisterTool<WithCallbackMethod_ListTools<WithCallbackMethod_RegisterPrompt<WithCallbackMethod_GetPrompt<WithCallbackMethod_ListPrompts<WithCallbackMethod_UpdatePrompt<WithCallbackMethod_DeletePrompt<Service > > > > > > > > > > > > > > > > CallbackService;
+  typedef CallbackService ExperimentalCallbackService;
+  template <class BaseClass>
   class WithGenericMethod_Register : public BaseClass {
    private:
-    void BaseClassMustBeDerivedFromService(const Service *service) {}
+    void BaseClassMustBeDerivedFromService(const Service* /*service*/) {}
    public:
     WithGenericMethod_Register() {
       ::grpc::Service::MarkMethodGeneric(0);
@@ -771,7 +1239,7 @@ class MCPService final {
       BaseClassMustBeDerivedFromService(this);
     }
     // disable synchronous version of this method
-    ::grpc::Status Register(::grpc::ServerContext* context, const ::mcp::RegisterRequest* request, ::mcp::RegisterResponse* response) override {
+    ::grpc::Status Register(::grpc::ServerContext* /*context*/, const ::mcp::RegisterRequest* /*request*/, ::mcp::RegisterResponse* /*response*/) override {
       abort();
       return ::grpc::Status(::grpc::StatusCode::UNIMPLEMENTED, "");
     }
@@ -779,7 +1247,7 @@ class MCPService final {
   template <class BaseClass>
   class WithGenericMethod_Initialize : public BaseClass {
    private:
-    void BaseClassMustBeDerivedFromService(const Service *service) {}
+    void BaseClassMustBeDerivedFromService(const Service* /*service*/) {}
    public:
     WithGenericMethod_Initialize() {
       ::grpc::Service::MarkMethodGeneric(1);
@@ -788,7 +1256,7 @@ class MCPService final {
       BaseClassMustBeDerivedFromService(this);
     }
     // disable synchronous version of this method
-    ::grpc::Status Initialize(::grpc::ServerContext* context, const ::mcp::InitializeRequest* request, ::mcp::InitializeResult* response) override {
+    ::grpc::Status Initialize(::grpc::ServerContext* /*context*/, const ::mcp::InitializeRequest* /*request*/, ::mcp::InitializeResult* /*response*/) override {
       abort();
       return ::grpc::Status(::grpc::StatusCode::UNIMPLEMENTED, "");
     }
@@ -796,7 +1264,7 @@ class MCPService final {
   template <class BaseClass>
   class WithGenericMethod_HandleRequest : public BaseClass {
    private:
-    void BaseClassMustBeDerivedFromService(const Service *service) {}
+    void BaseClassMustBeDerivedFromService(const Service* /*service*/) {}
    public:
     WithGenericMethod_HandleRequest() {
       ::grpc::Service::MarkMethodGeneric(2);
@@ -805,7 +1273,7 @@ class MCPService final {
       BaseClassMustBeDerivedFromService(this);
     }
     // disable synchronous version of this method
-    ::grpc::Status HandleRequest(::grpc::ServerContext* context, const ::mcp::JSONRPCRequest* request, ::mcp::JSONRPCResponse* response) override {
+    ::grpc::Status HandleRequest(::grpc::ServerContext* /*context*/, const ::mcp::JSONRPCRequest* /*request*/, ::mcp::JSONRPCResponse* /*response*/) override {
       abort();
       return ::grpc::Status(::grpc::StatusCode::UNIMPLEMENTED, "");
     }
@@ -813,7 +1281,7 @@ class MCPService final {
   template <class BaseClass>
   class WithGenericMethod_HandleNotification : public BaseClass {
    private:
-    void BaseClassMustBeDerivedFromService(const Service *service) {}
+    void BaseClassMustBeDerivedFromService(const Service* /*service*/) {}
    public:
     WithGenericMethod_HandleNotification() {
       ::grpc::Service::MarkMethodGeneric(3);
@@ -822,7 +1290,7 @@ class MCPService final {
       BaseClassMustBeDerivedFromService(this);
     }
     // disable synchronous version of this method
-    ::grpc::Status HandleNotification(::grpc::ServerContext* context, const ::mcp::JSONRPCNotification* request, ::mcp::Empty* response) override {
+    ::grpc::Status HandleNotification(::grpc::ServerContext* /*context*/, const ::mcp::JSONRPCNotification* /*request*/, ::mcp::Empty* /*response*/) override {
       abort();
       return ::grpc::Status(::grpc::StatusCode::UNIMPLEMENTED, "");
     }
@@ -830,7 +1298,7 @@ class MCPService final {
   template <class BaseClass>
   class WithGenericMethod_HandleBatchRequest : public BaseClass {
    private:
-    void BaseClassMustBeDerivedFromService(const Service *service) {}
+    void BaseClassMustBeDerivedFromService(const Service* /*service*/) {}
    public:
     WithGenericMethod_HandleBatchRequest() {
       ::grpc::Service::MarkMethodGeneric(4);
@@ -839,7 +1307,7 @@ class MCPService final {
       BaseClassMustBeDerivedFromService(this);
     }
     // disable synchronous version of this method
-    ::grpc::Status HandleBatchRequest(::grpc::ServerContext* context, const ::mcp::JSONRPCBatchRequest* request, ::mcp::JSONRPCBatchResponse* response) override {
+    ::grpc::Status HandleBatchRequest(::grpc::ServerContext* /*context*/, const ::mcp::JSONRPCBatchRequest* /*request*/, ::mcp::JSONRPCBatchResponse* /*response*/) override {
       abort();
       return ::grpc::Status(::grpc::StatusCode::UNIMPLEMENTED, "");
     }
@@ -847,7 +1315,7 @@ class MCPService final {
   template <class BaseClass>
   class WithGenericMethod_RegisterInputSchema : public BaseClass {
    private:
-    void BaseClassMustBeDerivedFromService(const Service *service) {}
+    void BaseClassMustBeDerivedFromService(const Service* /*service*/) {}
    public:
     WithGenericMethod_RegisterInputSchema() {
       ::grpc::Service::MarkMethodGeneric(5);
@@ -856,7 +1324,7 @@ class MCPService final {
       BaseClassMustBeDerivedFromService(this);
     }
     // disable synchronous version of this method
-    ::grpc::Status RegisterInputSchema(::grpc::ServerContext* context, const ::mcp::RegisterInputSchemaRequest* request, ::mcp::RegisterInputSchemaResponse* response) override {
+    ::grpc::Status RegisterInputSchema(::grpc::ServerContext* /*context*/, const ::mcp::RegisterInputSchemaRequest* /*request*/, ::mcp::RegisterInputSchemaResponse* /*response*/) override {
       abort();
       return ::grpc::Status(::grpc::StatusCode::UNIMPLEMENTED, "");
     }
@@ -864,7 +1332,7 @@ class MCPService final {
   template <class BaseClass>
   class WithGenericMethod_GetInputSchema : public BaseClass {
    private:
-    void BaseClassMustBeDerivedFromService(const Service *service) {}
+    void BaseClassMustBeDerivedFromService(const Service* /*service*/) {}
    public:
     WithGenericMethod_GetInputSchema() {
       ::grpc::Service::MarkMethodGeneric(6);
@@ -873,7 +1341,7 @@ class MCPService final {
       BaseClassMustBeDerivedFromService(this);
     }
     // disable synchronous version of this method
-    ::grpc::Status GetInputSchema(::grpc::ServerContext* context, const ::mcp::GetInputSchemaRequest* request, ::mcp::InputSchema* response) override {
+    ::grpc::Status GetInputSchema(::grpc::ServerContext* /*context*/, const ::mcp::GetInputSchemaRequest* /*request*/, ::mcp::InputSchema* /*response*/) override {
       abort();
       return ::grpc::Status(::grpc::StatusCode::UNIMPLEMENTED, "");
     }
@@ -881,7 +1349,7 @@ class MCPService final {
   template <class BaseClass>
   class WithGenericMethod_ListResources : public BaseClass {
    private:
-    void BaseClassMustBeDerivedFromService(const Service *service) {}
+    void BaseClassMustBeDerivedFromService(const Service* /*service*/) {}
    public:
     WithGenericMethod_ListResources() {
       ::grpc::Service::MarkMethodGeneric(7);
@@ -890,7 +1358,7 @@ class MCPService final {
       BaseClassMustBeDerivedFromService(this);
     }
     // disable synchronous version of this method
-    ::grpc::Status ListResources(::grpc::ServerContext* context, const ::mcp::ListResourcesRequest* request, ::mcp::ListResourcesResult* response) override {
+    ::grpc::Status ListResources(::grpc::ServerContext* /*context*/, const ::mcp::ListResourcesRequest* /*request*/, ::mcp::ListResourcesResult* /*response*/) override {
       abort();
       return ::grpc::Status(::grpc::StatusCode::UNIMPLEMENTED, "");
     }
@@ -898,7 +1366,7 @@ class MCPService final {
   template <class BaseClass>
   class WithGenericMethod_ReadResource : public BaseClass {
    private:
-    void BaseClassMustBeDerivedFromService(const Service *service) {}
+    void BaseClassMustBeDerivedFromService(const Service* /*service*/) {}
    public:
     WithGenericMethod_ReadResource() {
       ::grpc::Service::MarkMethodGeneric(8);
@@ -907,7 +1375,7 @@ class MCPService final {
       BaseClassMustBeDerivedFromService(this);
     }
     // disable synchronous version of this method
-    ::grpc::Status ReadResource(::grpc::ServerContext* context, const ::mcp::ReadResourceRequest* request, ::mcp::ReadResourceResult* response) override {
+    ::grpc::Status ReadResource(::grpc::ServerContext* /*context*/, const ::mcp::ReadResourceRequest* /*request*/, ::mcp::ReadResourceResult* /*response*/) override {
       abort();
       return ::grpc::Status(::grpc::StatusCode::UNIMPLEMENTED, "");
     }
@@ -915,7 +1383,7 @@ class MCPService final {
   template <class BaseClass>
   class WithGenericMethod_RegisterTool : public BaseClass {
    private:
-    void BaseClassMustBeDerivedFromService(const Service *service) {}
+    void BaseClassMustBeDerivedFromService(const Service* /*service*/) {}
    public:
     WithGenericMethod_RegisterTool() {
       ::grpc::Service::MarkMethodGeneric(9);
@@ -924,7 +1392,7 @@ class MCPService final {
       BaseClassMustBeDerivedFromService(this);
     }
     // disable synchronous version of this method
-    ::grpc::Status RegisterTool(::grpc::ServerContext* context, const ::mcp::RegisterToolRequest* request, ::mcp::RegisterToolResponse* response) override {
+    ::grpc::Status RegisterTool(::grpc::ServerContext* /*context*/, const ::mcp::RegisterToolRequest* /*request*/, ::mcp::RegisterToolResponse* /*response*/) override {
       abort();
       return ::grpc::Status(::grpc::StatusCode::UNIMPLEMENTED, "");
     }
@@ -932,7 +1400,7 @@ class MCPService final {
   template <class BaseClass>
   class WithGenericMethod_ListTools : public BaseClass {
    private:
-    void BaseClassMustBeDerivedFromService(const Service *service) {}
+    void BaseClassMustBeDerivedFromService(const Service* /*service*/) {}
    public:
     WithGenericMethod_ListTools() {
       ::grpc::Service::MarkMethodGeneric(10);
@@ -941,7 +1409,7 @@ class MCPService final {
       BaseClassMustBeDerivedFromService(this);
     }
     // disable synchronous version of this method
-    ::grpc::Status ListTools(::grpc::ServerContext* context, const ::mcp::ListToolsRequest* request, ::mcp::ListToolsResponse* response) override {
+    ::grpc::Status ListTools(::grpc::ServerContext* /*context*/, const ::mcp::ListToolsRequest* /*request*/, ::mcp::ListToolsResponse* /*response*/) override {
       abort();
       return ::grpc::Status(::grpc::StatusCode::UNIMPLEMENTED, "");
     }
@@ -949,7 +1417,7 @@ class MCPService final {
   template <class BaseClass>
   class WithGenericMethod_RegisterPrompt : public BaseClass {
    private:
-    void BaseClassMustBeDerivedFromService(const Service *service) {}
+    void BaseClassMustBeDerivedFromService(const Service* /*service*/) {}
    public:
     WithGenericMethod_RegisterPrompt() {
       ::grpc::Service::MarkMethodGeneric(11);
@@ -958,7 +1426,7 @@ class MCPService final {
       BaseClassMustBeDerivedFromService(this);
     }
     // disable synchronous version of this method
-    ::grpc::Status RegisterPrompt(::grpc::ServerContext* context, const ::mcp::RegisterPromptRequest* request, ::mcp::RegisterPromptResponse* response) override {
+    ::grpc::Status RegisterPrompt(::grpc::ServerContext* /*context*/, const ::mcp::RegisterPromptRequest* /*request*/, ::mcp::RegisterPromptResponse* /*response*/) override {
       abort();
       return ::grpc::Status(::grpc::StatusCode::UNIMPLEMENTED, "");
     }
@@ -966,7 +1434,7 @@ class MCPService final {
   template <class BaseClass>
   class WithGenericMethod_GetPrompt : public BaseClass {
    private:
-    void BaseClassMustBeDerivedFromService(const Service *service) {}
+    void BaseClassMustBeDerivedFromService(const Service* /*service*/) {}
    public:
     WithGenericMethod_GetPrompt() {
       ::grpc::Service::MarkMethodGeneric(12);
@@ -975,7 +1443,7 @@ class MCPService final {
       BaseClassMustBeDerivedFromService(this);
     }
     // disable synchronous version of this method
-    ::grpc::Status GetPrompt(::grpc::ServerContext* context, const ::mcp::GetPromptRequest* request, ::mcp::Prompt* response) override {
+    ::grpc::Status GetPrompt(::grpc::ServerContext* /*context*/, const ::mcp::GetPromptRequest* /*request*/, ::mcp::Prompt* /*response*/) override {
       abort();
       return ::grpc::Status(::grpc::StatusCode::UNIMPLEMENTED, "");
     }
@@ -983,7 +1451,7 @@ class MCPService final {
   template <class BaseClass>
   class WithGenericMethod_ListPrompts : public BaseClass {
    private:
-    void BaseClassMustBeDerivedFromService(const Service *service) {}
+    void BaseClassMustBeDerivedFromService(const Service* /*service*/) {}
    public:
     WithGenericMethod_ListPrompts() {
       ::grpc::Service::MarkMethodGeneric(13);
@@ -992,7 +1460,7 @@ class MCPService final {
       BaseClassMustBeDerivedFromService(this);
     }
     // disable synchronous version of this method
-    ::grpc::Status ListPrompts(::grpc::ServerContext* context, const ::mcp::ListPromptsRequest* request, ::mcp::ListPromptsResponse* response) override {
+    ::grpc::Status ListPrompts(::grpc::ServerContext* /*context*/, const ::mcp::ListPromptsRequest* /*request*/, ::mcp::ListPromptsResponse* /*response*/) override {
       abort();
       return ::grpc::Status(::grpc::StatusCode::UNIMPLEMENTED, "");
     }
@@ -1000,7 +1468,7 @@ class MCPService final {
   template <class BaseClass>
   class WithGenericMethod_UpdatePrompt : public BaseClass {
    private:
-    void BaseClassMustBeDerivedFromService(const Service *service) {}
+    void BaseClassMustBeDerivedFromService(const Service* /*service*/) {}
    public:
     WithGenericMethod_UpdatePrompt() {
       ::grpc::Service::MarkMethodGeneric(14);
@@ -1009,7 +1477,7 @@ class MCPService final {
       BaseClassMustBeDerivedFromService(this);
     }
     // disable synchronous version of this method
-    ::grpc::Status UpdatePrompt(::grpc::ServerContext* context, const ::mcp::UpdatePromptRequest* request, ::mcp::UpdatePromptResponse* response) override {
+    ::grpc::Status UpdatePrompt(::grpc::ServerContext* /*context*/, const ::mcp::UpdatePromptRequest* /*request*/, ::mcp::UpdatePromptResponse* /*response*/) override {
       abort();
       return ::grpc::Status(::grpc::StatusCode::UNIMPLEMENTED, "");
     }
@@ -1017,7 +1485,7 @@ class MCPService final {
   template <class BaseClass>
   class WithGenericMethod_DeletePrompt : public BaseClass {
    private:
-    void BaseClassMustBeDerivedFromService(const Service *service) {}
+    void BaseClassMustBeDerivedFromService(const Service* /*service*/) {}
    public:
     WithGenericMethod_DeletePrompt() {
       ::grpc::Service::MarkMethodGeneric(15);
@@ -1026,7 +1494,7 @@ class MCPService final {
       BaseClassMustBeDerivedFromService(this);
     }
     // disable synchronous version of this method
-    ::grpc::Status DeletePrompt(::grpc::ServerContext* context, const ::mcp::DeletePromptRequest* request, ::mcp::DeletePromptResponse* response) override {
+    ::grpc::Status DeletePrompt(::grpc::ServerContext* /*context*/, const ::mcp::DeletePromptRequest* /*request*/, ::mcp::DeletePromptResponse* /*response*/) override {
       abort();
       return ::grpc::Status(::grpc::StatusCode::UNIMPLEMENTED, "");
     }
@@ -1034,7 +1502,7 @@ class MCPService final {
   template <class BaseClass>
   class WithRawMethod_Register : public BaseClass {
    private:
-    void BaseClassMustBeDerivedFromService(const Service *service) {}
+    void BaseClassMustBeDerivedFromService(const Service* /*service*/) {}
    public:
     WithRawMethod_Register() {
       ::grpc::Service::MarkMethodRaw(0);
@@ -1043,7 +1511,7 @@ class MCPService final {
       BaseClassMustBeDerivedFromService(this);
     }
     // disable synchronous version of this method
-    ::grpc::Status Register(::grpc::ServerContext* context, const ::mcp::RegisterRequest* request, ::mcp::RegisterResponse* response) override {
+    ::grpc::Status Register(::grpc::ServerContext* /*context*/, const ::mcp::RegisterRequest* /*request*/, ::mcp::RegisterResponse* /*response*/) override {
       abort();
       return ::grpc::Status(::grpc::StatusCode::UNIMPLEMENTED, "");
     }
@@ -1054,7 +1522,7 @@ class MCPService final {
   template <class BaseClass>
   class WithRawMethod_Initialize : public BaseClass {
    private:
-    void BaseClassMustBeDerivedFromService(const Service *service) {}
+    void BaseClassMustBeDerivedFromService(const Service* /*service*/) {}
    public:
     WithRawMethod_Initialize() {
       ::grpc::Service::MarkMethodRaw(1);
@@ -1063,7 +1531,7 @@ class MCPService final {
       BaseClassMustBeDerivedFromService(this);
     }
     // disable synchronous version of this method
-    ::grpc::Status Initialize(::grpc::ServerContext* context, const ::mcp::InitializeRequest* request, ::mcp::InitializeResult* response) override {
+    ::grpc::Status Initialize(::grpc::ServerContext* /*context*/, const ::mcp::InitializeRequest* /*request*/, ::mcp::InitializeResult* /*response*/) override {
       abort();
       return ::grpc::Status(::grpc::StatusCode::UNIMPLEMENTED, "");
     }
@@ -1074,7 +1542,7 @@ class MCPService final {
   template <class BaseClass>
   class WithRawMethod_HandleRequest : public BaseClass {
    private:
-    void BaseClassMustBeDerivedFromService(const Service *service) {}
+    void BaseClassMustBeDerivedFromService(const Service* /*service*/) {}
    public:
     WithRawMethod_HandleRequest() {
       ::grpc::Service::MarkMethodRaw(2);
@@ -1083,7 +1551,7 @@ class MCPService final {
       BaseClassMustBeDerivedFromService(this);
     }
     // disable synchronous version of this method
-    ::grpc::Status HandleRequest(::grpc::ServerContext* context, const ::mcp::JSONRPCRequest* request, ::mcp::JSONRPCResponse* response) override {
+    ::grpc::Status HandleRequest(::grpc::ServerContext* /*context*/, const ::mcp::JSONRPCRequest* /*request*/, ::mcp::JSONRPCResponse* /*response*/) override {
       abort();
       return ::grpc::Status(::grpc::StatusCode::UNIMPLEMENTED, "");
     }
@@ -1094,7 +1562,7 @@ class MCPService final {
   template <class BaseClass>
   class WithRawMethod_HandleNotification : public BaseClass {
    private:
-    void BaseClassMustBeDerivedFromService(const Service *service) {}
+    void BaseClassMustBeDerivedFromService(const Service* /*service*/) {}
    public:
     WithRawMethod_HandleNotification() {
       ::grpc::Service::MarkMethodRaw(3);
@@ -1103,7 +1571,7 @@ class MCPService final {
       BaseClassMustBeDerivedFromService(this);
     }
     // disable synchronous version of this method
-    ::grpc::Status HandleNotification(::grpc::ServerContext* context, const ::mcp::JSONRPCNotification* request, ::mcp::Empty* response) override {
+    ::grpc::Status HandleNotification(::grpc::ServerContext* /*context*/, const ::mcp::JSONRPCNotification* /*request*/, ::mcp::Empty* /*response*/) override {
       abort();
       return ::grpc::Status(::grpc::StatusCode::UNIMPLEMENTED, "");
     }
@@ -1114,7 +1582,7 @@ class MCPService final {
   template <class BaseClass>
   class WithRawMethod_HandleBatchRequest : public BaseClass {
    private:
-    void BaseClassMustBeDerivedFromService(const Service *service) {}
+    void BaseClassMustBeDerivedFromService(const Service* /*service*/) {}
    public:
     WithRawMethod_HandleBatchRequest() {
       ::grpc::Service::MarkMethodRaw(4);
@@ -1123,7 +1591,7 @@ class MCPService final {
       BaseClassMustBeDerivedFromService(this);
     }
     // disable synchronous version of this method
-    ::grpc::Status HandleBatchRequest(::grpc::ServerContext* context, const ::mcp::JSONRPCBatchRequest* request, ::mcp::JSONRPCBatchResponse* response) override {
+    ::grpc::Status HandleBatchRequest(::grpc::ServerContext* /*context*/, const ::mcp::JSONRPCBatchRequest* /*request*/, ::mcp::JSONRPCBatchResponse* /*response*/) override {
       abort();
       return ::grpc::Status(::grpc::StatusCode::UNIMPLEMENTED, "");
     }
@@ -1134,7 +1602,7 @@ class MCPService final {
   template <class BaseClass>
   class WithRawMethod_RegisterInputSchema : public BaseClass {
    private:
-    void BaseClassMustBeDerivedFromService(const Service *service) {}
+    void BaseClassMustBeDerivedFromService(const Service* /*service*/) {}
    public:
     WithRawMethod_RegisterInputSchema() {
       ::grpc::Service::MarkMethodRaw(5);
@@ -1143,7 +1611,7 @@ class MCPService final {
       BaseClassMustBeDerivedFromService(this);
     }
     // disable synchronous version of this method
-    ::grpc::Status RegisterInputSchema(::grpc::ServerContext* context, const ::mcp::RegisterInputSchemaRequest* request, ::mcp::RegisterInputSchemaResponse* response) override {
+    ::grpc::Status RegisterInputSchema(::grpc::ServerContext* /*context*/, const ::mcp::RegisterInputSchemaRequest* /*request*/, ::mcp::RegisterInputSchemaResponse* /*response*/) override {
       abort();
       return ::grpc::Status(::grpc::StatusCode::UNIMPLEMENTED, "");
     }
@@ -1154,7 +1622,7 @@ class MCPService final {
   template <class BaseClass>
   class WithRawMethod_GetInputSchema : public BaseClass {
    private:
-    void BaseClassMustBeDerivedFromService(const Service *service) {}
+    void BaseClassMustBeDerivedFromService(const Service* /*service*/) {}
    public:
     WithRawMethod_GetInputSchema() {
       ::grpc::Service::MarkMethodRaw(6);
@@ -1163,7 +1631,7 @@ class MCPService final {
       BaseClassMustBeDerivedFromService(this);
     }
     // disable synchronous version of this method
-    ::grpc::Status GetInputSchema(::grpc::ServerContext* context, const ::mcp::GetInputSchemaRequest* request, ::mcp::InputSchema* response) override {
+    ::grpc::Status GetInputSchema(::grpc::ServerContext* /*context*/, const ::mcp::GetInputSchemaRequest* /*request*/, ::mcp::InputSchema* /*response*/) override {
       abort();
       return ::grpc::Status(::grpc::StatusCode::UNIMPLEMENTED, "");
     }
@@ -1174,7 +1642,7 @@ class MCPService final {
   template <class BaseClass>
   class WithRawMethod_ListResources : public BaseClass {
    private:
-    void BaseClassMustBeDerivedFromService(const Service *service) {}
+    void BaseClassMustBeDerivedFromService(const Service* /*service*/) {}
    public:
     WithRawMethod_ListResources() {
       ::grpc::Service::MarkMethodRaw(7);
@@ -1183,7 +1651,7 @@ class MCPService final {
       BaseClassMustBeDerivedFromService(this);
     }
     // disable synchronous version of this method
-    ::grpc::Status ListResources(::grpc::ServerContext* context, const ::mcp::ListResourcesRequest* request, ::mcp::ListResourcesResult* response) override {
+    ::grpc::Status ListResources(::grpc::ServerContext* /*context*/, const ::mcp::ListResourcesRequest* /*request*/, ::mcp::ListResourcesResult* /*response*/) override {
       abort();
       return ::grpc::Status(::grpc::StatusCode::UNIMPLEMENTED, "");
     }
@@ -1194,7 +1662,7 @@ class MCPService final {
   template <class BaseClass>
   class WithRawMethod_ReadResource : public BaseClass {
    private:
-    void BaseClassMustBeDerivedFromService(const Service *service) {}
+    void BaseClassMustBeDerivedFromService(const Service* /*service*/) {}
    public:
     WithRawMethod_ReadResource() {
       ::grpc::Service::MarkMethodRaw(8);
@@ -1203,7 +1671,7 @@ class MCPService final {
       BaseClassMustBeDerivedFromService(this);
     }
     // disable synchronous version of this method
-    ::grpc::Status ReadResource(::grpc::ServerContext* context, const ::mcp::ReadResourceRequest* request, ::mcp::ReadResourceResult* response) override {
+    ::grpc::Status ReadResource(::grpc::ServerContext* /*context*/, const ::mcp::ReadResourceRequest* /*request*/, ::mcp::ReadResourceResult* /*response*/) override {
       abort();
       return ::grpc::Status(::grpc::StatusCode::UNIMPLEMENTED, "");
     }
@@ -1214,7 +1682,7 @@ class MCPService final {
   template <class BaseClass>
   class WithRawMethod_RegisterTool : public BaseClass {
    private:
-    void BaseClassMustBeDerivedFromService(const Service *service) {}
+    void BaseClassMustBeDerivedFromService(const Service* /*service*/) {}
    public:
     WithRawMethod_RegisterTool() {
       ::grpc::Service::MarkMethodRaw(9);
@@ -1223,7 +1691,7 @@ class MCPService final {
       BaseClassMustBeDerivedFromService(this);
     }
     // disable synchronous version of this method
-    ::grpc::Status RegisterTool(::grpc::ServerContext* context, const ::mcp::RegisterToolRequest* request, ::mcp::RegisterToolResponse* response) override {
+    ::grpc::Status RegisterTool(::grpc::ServerContext* /*context*/, const ::mcp::RegisterToolRequest* /*request*/, ::mcp::RegisterToolResponse* /*response*/) override {
       abort();
       return ::grpc::Status(::grpc::StatusCode::UNIMPLEMENTED, "");
     }
@@ -1234,7 +1702,7 @@ class MCPService final {
   template <class BaseClass>
   class WithRawMethod_ListTools : public BaseClass {
    private:
-    void BaseClassMustBeDerivedFromService(const Service *service) {}
+    void BaseClassMustBeDerivedFromService(const Service* /*service*/) {}
    public:
     WithRawMethod_ListTools() {
       ::grpc::Service::MarkMethodRaw(10);
@@ -1243,7 +1711,7 @@ class MCPService final {
       BaseClassMustBeDerivedFromService(this);
     }
     // disable synchronous version of this method
-    ::grpc::Status ListTools(::grpc::ServerContext* context, const ::mcp::ListToolsRequest* request, ::mcp::ListToolsResponse* response) override {
+    ::grpc::Status ListTools(::grpc::ServerContext* /*context*/, const ::mcp::ListToolsRequest* /*request*/, ::mcp::ListToolsResponse* /*response*/) override {
       abort();
       return ::grpc::Status(::grpc::StatusCode::UNIMPLEMENTED, "");
     }
@@ -1254,7 +1722,7 @@ class MCPService final {
   template <class BaseClass>
   class WithRawMethod_RegisterPrompt : public BaseClass {
    private:
-    void BaseClassMustBeDerivedFromService(const Service *service) {}
+    void BaseClassMustBeDerivedFromService(const Service* /*service*/) {}
    public:
     WithRawMethod_RegisterPrompt() {
       ::grpc::Service::MarkMethodRaw(11);
@@ -1263,7 +1731,7 @@ class MCPService final {
       BaseClassMustBeDerivedFromService(this);
     }
     // disable synchronous version of this method
-    ::grpc::Status RegisterPrompt(::grpc::ServerContext* context, const ::mcp::RegisterPromptRequest* request, ::mcp::RegisterPromptResponse* response) override {
+    ::grpc::Status RegisterPrompt(::grpc::ServerContext* /*context*/, const ::mcp::RegisterPromptRequest* /*request*/, ::mcp::RegisterPromptResponse* /*response*/) override {
       abort();
       return ::grpc::Status(::grpc::StatusCode::UNIMPLEMENTED, "");
     }
@@ -1274,7 +1742,7 @@ class MCPService final {
   template <class BaseClass>
   class WithRawMethod_GetPrompt : public BaseClass {
    private:
-    void BaseClassMustBeDerivedFromService(const Service *service) {}
+    void BaseClassMustBeDerivedFromService(const Service* /*service*/) {}
    public:
     WithRawMethod_GetPrompt() {
       ::grpc::Service::MarkMethodRaw(12);
@@ -1283,7 +1751,7 @@ class MCPService final {
       BaseClassMustBeDerivedFromService(this);
     }
     // disable synchronous version of this method
-    ::grpc::Status GetPrompt(::grpc::ServerContext* context, const ::mcp::GetPromptRequest* request, ::mcp::Prompt* response) override {
+    ::grpc::Status GetPrompt(::grpc::ServerContext* /*context*/, const ::mcp::GetPromptRequest* /*request*/, ::mcp::Prompt* /*response*/) override {
       abort();
       return ::grpc::Status(::grpc::StatusCode::UNIMPLEMENTED, "");
     }
@@ -1294,7 +1762,7 @@ class MCPService final {
   template <class BaseClass>
   class WithRawMethod_ListPrompts : public BaseClass {
    private:
-    void BaseClassMustBeDerivedFromService(const Service *service) {}
+    void BaseClassMustBeDerivedFromService(const Service* /*service*/) {}
    public:
     WithRawMethod_ListPrompts() {
       ::grpc::Service::MarkMethodRaw(13);
@@ -1303,7 +1771,7 @@ class MCPService final {
       BaseClassMustBeDerivedFromService(this);
     }
     // disable synchronous version of this method
-    ::grpc::Status ListPrompts(::grpc::ServerContext* context, const ::mcp::ListPromptsRequest* request, ::mcp::ListPromptsResponse* response) override {
+    ::grpc::Status ListPrompts(::grpc::ServerContext* /*context*/, const ::mcp::ListPromptsRequest* /*request*/, ::mcp::ListPromptsResponse* /*response*/) override {
       abort();
       return ::grpc::Status(::grpc::StatusCode::UNIMPLEMENTED, "");
     }
@@ -1314,7 +1782,7 @@ class MCPService final {
   template <class BaseClass>
   class WithRawMethod_UpdatePrompt : public BaseClass {
    private:
-    void BaseClassMustBeDerivedFromService(const Service *service) {}
+    void BaseClassMustBeDerivedFromService(const Service* /*service*/) {}
    public:
     WithRawMethod_UpdatePrompt() {
       ::grpc::Service::MarkMethodRaw(14);
@@ -1323,7 +1791,7 @@ class MCPService final {
       BaseClassMustBeDerivedFromService(this);
     }
     // disable synchronous version of this method
-    ::grpc::Status UpdatePrompt(::grpc::ServerContext* context, const ::mcp::UpdatePromptRequest* request, ::mcp::UpdatePromptResponse* response) override {
+    ::grpc::Status UpdatePrompt(::grpc::ServerContext* /*context*/, const ::mcp::UpdatePromptRequest* /*request*/, ::mcp::UpdatePromptResponse* /*response*/) override {
       abort();
       return ::grpc::Status(::grpc::StatusCode::UNIMPLEMENTED, "");
     }
@@ -1334,7 +1802,7 @@ class MCPService final {
   template <class BaseClass>
   class WithRawMethod_DeletePrompt : public BaseClass {
    private:
-    void BaseClassMustBeDerivedFromService(const Service *service) {}
+    void BaseClassMustBeDerivedFromService(const Service* /*service*/) {}
    public:
     WithRawMethod_DeletePrompt() {
       ::grpc::Service::MarkMethodRaw(15);
@@ -1343,7 +1811,7 @@ class MCPService final {
       BaseClassMustBeDerivedFromService(this);
     }
     // disable synchronous version of this method
-    ::grpc::Status DeletePrompt(::grpc::ServerContext* context, const ::mcp::DeletePromptRequest* request, ::mcp::DeletePromptResponse* response) override {
+    ::grpc::Status DeletePrompt(::grpc::ServerContext* /*context*/, const ::mcp::DeletePromptRequest* /*request*/, ::mcp::DeletePromptResponse* /*response*/) override {
       abort();
       return ::grpc::Status(::grpc::StatusCode::UNIMPLEMENTED, "");
     }
@@ -1352,19 +1820,378 @@ class MCPService final {
     }
   };
   template <class BaseClass>
+  class WithRawCallbackMethod_Register : public BaseClass {
+   private:
+    void BaseClassMustBeDerivedFromService(const Service* /*service*/) {}
+   public:
+    WithRawCallbackMethod_Register() {
+      ::grpc::Service::MarkMethodRawCallback(0,
+          new ::grpc::internal::CallbackUnaryHandler< ::grpc::ByteBuffer, ::grpc::ByteBuffer>(
+            [this](
+                   ::grpc::CallbackServerContext* context, const ::grpc::ByteBuffer* request, ::grpc::ByteBuffer* response) { return this->Register(context, request, response); }));
+    }
+    ~WithRawCallbackMethod_Register() override {
+      BaseClassMustBeDerivedFromService(this);
+    }
+    // disable synchronous version of this method
+    ::grpc::Status Register(::grpc::ServerContext* /*context*/, const ::mcp::RegisterRequest* /*request*/, ::mcp::RegisterResponse* /*response*/) override {
+      abort();
+      return ::grpc::Status(::grpc::StatusCode::UNIMPLEMENTED, "");
+    }
+    virtual ::grpc::ServerUnaryReactor* Register(
+      ::grpc::CallbackServerContext* /*context*/, const ::grpc::ByteBuffer* /*request*/, ::grpc::ByteBuffer* /*response*/)  { return nullptr; }
+  };
+  template <class BaseClass>
+  class WithRawCallbackMethod_Initialize : public BaseClass {
+   private:
+    void BaseClassMustBeDerivedFromService(const Service* /*service*/) {}
+   public:
+    WithRawCallbackMethod_Initialize() {
+      ::grpc::Service::MarkMethodRawCallback(1,
+          new ::grpc::internal::CallbackUnaryHandler< ::grpc::ByteBuffer, ::grpc::ByteBuffer>(
+            [this](
+                   ::grpc::CallbackServerContext* context, const ::grpc::ByteBuffer* request, ::grpc::ByteBuffer* response) { return this->Initialize(context, request, response); }));
+    }
+    ~WithRawCallbackMethod_Initialize() override {
+      BaseClassMustBeDerivedFromService(this);
+    }
+    // disable synchronous version of this method
+    ::grpc::Status Initialize(::grpc::ServerContext* /*context*/, const ::mcp::InitializeRequest* /*request*/, ::mcp::InitializeResult* /*response*/) override {
+      abort();
+      return ::grpc::Status(::grpc::StatusCode::UNIMPLEMENTED, "");
+    }
+    virtual ::grpc::ServerUnaryReactor* Initialize(
+      ::grpc::CallbackServerContext* /*context*/, const ::grpc::ByteBuffer* /*request*/, ::grpc::ByteBuffer* /*response*/)  { return nullptr; }
+  };
+  template <class BaseClass>
+  class WithRawCallbackMethod_HandleRequest : public BaseClass {
+   private:
+    void BaseClassMustBeDerivedFromService(const Service* /*service*/) {}
+   public:
+    WithRawCallbackMethod_HandleRequest() {
+      ::grpc::Service::MarkMethodRawCallback(2,
+          new ::grpc::internal::CallbackUnaryHandler< ::grpc::ByteBuffer, ::grpc::ByteBuffer>(
+            [this](
+                   ::grpc::CallbackServerContext* context, const ::grpc::ByteBuffer* request, ::grpc::ByteBuffer* response) { return this->HandleRequest(context, request, response); }));
+    }
+    ~WithRawCallbackMethod_HandleRequest() override {
+      BaseClassMustBeDerivedFromService(this);
+    }
+    // disable synchronous version of this method
+    ::grpc::Status HandleRequest(::grpc::ServerContext* /*context*/, const ::mcp::JSONRPCRequest* /*request*/, ::mcp::JSONRPCResponse* /*response*/) override {
+      abort();
+      return ::grpc::Status(::grpc::StatusCode::UNIMPLEMENTED, "");
+    }
+    virtual ::grpc::ServerUnaryReactor* HandleRequest(
+      ::grpc::CallbackServerContext* /*context*/, const ::grpc::ByteBuffer* /*request*/, ::grpc::ByteBuffer* /*response*/)  { return nullptr; }
+  };
+  template <class BaseClass>
+  class WithRawCallbackMethod_HandleNotification : public BaseClass {
+   private:
+    void BaseClassMustBeDerivedFromService(const Service* /*service*/) {}
+   public:
+    WithRawCallbackMethod_HandleNotification() {
+      ::grpc::Service::MarkMethodRawCallback(3,
+          new ::grpc::internal::CallbackUnaryHandler< ::grpc::ByteBuffer, ::grpc::ByteBuffer>(
+            [this](
+                   ::grpc::CallbackServerContext* context, const ::grpc::ByteBuffer* request, ::grpc::ByteBuffer* response) { return this->HandleNotification(context, request, response); }));
+    }
+    ~WithRawCallbackMethod_HandleNotification() override {
+      BaseClassMustBeDerivedFromService(this);
+    }
+    // disable synchronous version of this method
+    ::grpc::Status HandleNotification(::grpc::ServerContext* /*context*/, const ::mcp::JSONRPCNotification* /*request*/, ::mcp::Empty* /*response*/) override {
+      abort();
+      return ::grpc::Status(::grpc::StatusCode::UNIMPLEMENTED, "");
+    }
+    virtual ::grpc::ServerUnaryReactor* HandleNotification(
+      ::grpc::CallbackServerContext* /*context*/, const ::grpc::ByteBuffer* /*request*/, ::grpc::ByteBuffer* /*response*/)  { return nullptr; }
+  };
+  template <class BaseClass>
+  class WithRawCallbackMethod_HandleBatchRequest : public BaseClass {
+   private:
+    void BaseClassMustBeDerivedFromService(const Service* /*service*/) {}
+   public:
+    WithRawCallbackMethod_HandleBatchRequest() {
+      ::grpc::Service::MarkMethodRawCallback(4,
+          new ::grpc::internal::CallbackUnaryHandler< ::grpc::ByteBuffer, ::grpc::ByteBuffer>(
+            [this](
+                   ::grpc::CallbackServerContext* context, const ::grpc::ByteBuffer* request, ::grpc::ByteBuffer* response) { return this->HandleBatchRequest(context, request, response); }));
+    }
+    ~WithRawCallbackMethod_HandleBatchRequest() override {
+      BaseClassMustBeDerivedFromService(this);
+    }
+    // disable synchronous version of this method
+    ::grpc::Status HandleBatchRequest(::grpc::ServerContext* /*context*/, const ::mcp::JSONRPCBatchRequest* /*request*/, ::mcp::JSONRPCBatchResponse* /*response*/) override {
+      abort();
+      return ::grpc::Status(::grpc::StatusCode::UNIMPLEMENTED, "");
+    }
+    virtual ::grpc::ServerUnaryReactor* HandleBatchRequest(
+      ::grpc::CallbackServerContext* /*context*/, const ::grpc::ByteBuffer* /*request*/, ::grpc::ByteBuffer* /*response*/)  { return nullptr; }
+  };
+  template <class BaseClass>
+  class WithRawCallbackMethod_RegisterInputSchema : public BaseClass {
+   private:
+    void BaseClassMustBeDerivedFromService(const Service* /*service*/) {}
+   public:
+    WithRawCallbackMethod_RegisterInputSchema() {
+      ::grpc::Service::MarkMethodRawCallback(5,
+          new ::grpc::internal::CallbackUnaryHandler< ::grpc::ByteBuffer, ::grpc::ByteBuffer>(
+            [this](
+                   ::grpc::CallbackServerContext* context, const ::grpc::ByteBuffer* request, ::grpc::ByteBuffer* response) { return this->RegisterInputSchema(context, request, response); }));
+    }
+    ~WithRawCallbackMethod_RegisterInputSchema() override {
+      BaseClassMustBeDerivedFromService(this);
+    }
+    // disable synchronous version of this method
+    ::grpc::Status RegisterInputSchema(::grpc::ServerContext* /*context*/, const ::mcp::RegisterInputSchemaRequest* /*request*/, ::mcp::RegisterInputSchemaResponse* /*response*/) override {
+      abort();
+      return ::grpc::Status(::grpc::StatusCode::UNIMPLEMENTED, "");
+    }
+    virtual ::grpc::ServerUnaryReactor* RegisterInputSchema(
+      ::grpc::CallbackServerContext* /*context*/, const ::grpc::ByteBuffer* /*request*/, ::grpc::ByteBuffer* /*response*/)  { return nullptr; }
+  };
+  template <class BaseClass>
+  class WithRawCallbackMethod_GetInputSchema : public BaseClass {
+   private:
+    void BaseClassMustBeDerivedFromService(const Service* /*service*/) {}
+   public:
+    WithRawCallbackMethod_GetInputSchema() {
+      ::grpc::Service::MarkMethodRawCallback(6,
+          new ::grpc::internal::CallbackUnaryHandler< ::grpc::ByteBuffer, ::grpc::ByteBuffer>(
+            [this](
+                   ::grpc::CallbackServerContext* context, const ::grpc::ByteBuffer* request, ::grpc::ByteBuffer* response) { return this->GetInputSchema(context, request, response); }));
+    }
+    ~WithRawCallbackMethod_GetInputSchema() override {
+      BaseClassMustBeDerivedFromService(this);
+    }
+    // disable synchronous version of this method
+    ::grpc::Status GetInputSchema(::grpc::ServerContext* /*context*/, const ::mcp::GetInputSchemaRequest* /*request*/, ::mcp::InputSchema* /*response*/) override {
+      abort();
+      return ::grpc::Status(::grpc::StatusCode::UNIMPLEMENTED, "");
+    }
+    virtual ::grpc::ServerUnaryReactor* GetInputSchema(
+      ::grpc::CallbackServerContext* /*context*/, const ::grpc::ByteBuffer* /*request*/, ::grpc::ByteBuffer* /*response*/)  { return nullptr; }
+  };
+  template <class BaseClass>
+  class WithRawCallbackMethod_ListResources : public BaseClass {
+   private:
+    void BaseClassMustBeDerivedFromService(const Service* /*service*/) {}
+   public:
+    WithRawCallbackMethod_ListResources() {
+      ::grpc::Service::MarkMethodRawCallback(7,
+          new ::grpc::internal::CallbackUnaryHandler< ::grpc::ByteBuffer, ::grpc::ByteBuffer>(
+            [this](
+                   ::grpc::CallbackServerContext* context, const ::grpc::ByteBuffer* request, ::grpc::ByteBuffer* response) { return this->ListResources(context, request, response); }));
+    }
+    ~WithRawCallbackMethod_ListResources() override {
+      BaseClassMustBeDerivedFromService(this);
+    }
+    // disable synchronous version of this method
+    ::grpc::Status ListResources(::grpc::ServerContext* /*context*/, const ::mcp::ListResourcesRequest* /*request*/, ::mcp::ListResourcesResult* /*response*/) override {
+      abort();
+      return ::grpc::Status(::grpc::StatusCode::UNIMPLEMENTED, "");
+    }
+    virtual ::grpc::ServerUnaryReactor* ListResources(
+      ::grpc::CallbackServerContext* /*context*/, const ::grpc::ByteBuffer* /*request*/, ::grpc::ByteBuffer* /*response*/)  { return nullptr; }
+  };
+  template <class BaseClass>
+  class WithRawCallbackMethod_ReadResource : public BaseClass {
+   private:
+    void BaseClassMustBeDerivedFromService(const Service* /*service*/) {}
+   public:
+    WithRawCallbackMethod_ReadResource() {
+      ::grpc::Service::MarkMethodRawCallback(8,
+          new ::grpc::internal::CallbackUnaryHandler< ::grpc::ByteBuffer, ::grpc::ByteBuffer>(
+            [this](
+                   ::grpc::CallbackServerContext* context, const ::grpc::ByteBuffer* request, ::grpc::ByteBuffer* response) { return this->ReadResource(context, request, response); }));
+    }
+    ~WithRawCallbackMethod_ReadResource() override {
+      BaseClassMustBeDerivedFromService(this);
+    }
+    // disable synchronous version of this method
+    ::grpc::Status ReadResource(::grpc::ServerContext* /*context*/, const ::mcp::ReadResourceRequest* /*request*/, ::mcp::ReadResourceResult* /*response*/) override {
+      abort();
+      return ::grpc::Status(::grpc::StatusCode::UNIMPLEMENTED, "");
+    }
+    virtual ::grpc::ServerUnaryReactor* ReadResource(
+      ::grpc::CallbackServerContext* /*context*/, const ::grpc::ByteBuffer* /*request*/, ::grpc::ByteBuffer* /*response*/)  { return nullptr; }
+  };
+  template <class BaseClass>
+  class WithRawCallbackMethod_RegisterTool : public BaseClass {
+   private:
+    void BaseClassMustBeDerivedFromService(const Service* /*service*/) {}
+   public:
+    WithRawCallbackMethod_RegisterTool() {
+      ::grpc::Service::MarkMethodRawCallback(9,
+          new ::grpc::internal::CallbackUnaryHandler< ::grpc::ByteBuffer, ::grpc::ByteBuffer>(
+            [this](
+                   ::grpc::CallbackServerContext* context, const ::grpc::ByteBuffer* request, ::grpc::ByteBuffer* response) { return this->RegisterTool(context, request, response); }));
+    }
+    ~WithRawCallbackMethod_RegisterTool() override {
+      BaseClassMustBeDerivedFromService(this);
+    }
+    // disable synchronous version of this method
+    ::grpc::Status RegisterTool(::grpc::ServerContext* /*context*/, const ::mcp::RegisterToolRequest* /*request*/, ::mcp::RegisterToolResponse* /*response*/) override {
+      abort();
+      return ::grpc::Status(::grpc::StatusCode::UNIMPLEMENTED, "");
+    }
+    virtual ::grpc::ServerUnaryReactor* RegisterTool(
+      ::grpc::CallbackServerContext* /*context*/, const ::grpc::ByteBuffer* /*request*/, ::grpc::ByteBuffer* /*response*/)  { return nullptr; }
+  };
+  template <class BaseClass>
+  class WithRawCallbackMethod_ListTools : public BaseClass {
+   private:
+    void BaseClassMustBeDerivedFromService(const Service* /*service*/) {}
+   public:
+    WithRawCallbackMethod_ListTools() {
+      ::grpc::Service::MarkMethodRawCallback(10,
+          new ::grpc::internal::CallbackUnaryHandler< ::grpc::ByteBuffer, ::grpc::ByteBuffer>(
+            [this](
+                   ::grpc::CallbackServerContext* context, const ::grpc::ByteBuffer* request, ::grpc::ByteBuffer* response) { return this->ListTools(context, request, response); }));
+    }
+    ~WithRawCallbackMethod_ListTools() override {
+      BaseClassMustBeDerivedFromService(this);
+    }
+    // disable synchronous version of this method
+    ::grpc::Status ListTools(::grpc::ServerContext* /*context*/, const ::mcp::ListToolsRequest* /*request*/, ::mcp::ListToolsResponse* /*response*/) override {
+      abort();
+      return ::grpc::Status(::grpc::StatusCode::UNIMPLEMENTED, "");
+    }
+    virtual ::grpc::ServerUnaryReactor* ListTools(
+      ::grpc::CallbackServerContext* /*context*/, const ::grpc::ByteBuffer* /*request*/, ::grpc::ByteBuffer* /*response*/)  { return nullptr; }
+  };
+  template <class BaseClass>
+  class WithRawCallbackMethod_RegisterPrompt : public BaseClass {
+   private:
+    void BaseClassMustBeDerivedFromService(const Service* /*service*/) {}
+   public:
+    WithRawCallbackMethod_RegisterPrompt() {
+      ::grpc::Service::MarkMethodRawCallback(11,
+          new ::grpc::internal::CallbackUnaryHandler< ::grpc::ByteBuffer, ::grpc::ByteBuffer>(
+            [this](
+                   ::grpc::CallbackServerContext* context, const ::grpc::ByteBuffer* request, ::grpc::ByteBuffer* response) { return this->RegisterPrompt(context, request, response); }));
+    }
+    ~WithRawCallbackMethod_RegisterPrompt() override {
+      BaseClassMustBeDerivedFromService(this);
+    }
+    // disable synchronous version of this method
+    ::grpc::Status RegisterPrompt(::grpc::ServerContext* /*context*/, const ::mcp::RegisterPromptRequest* /*request*/, ::mcp::RegisterPromptResponse* /*response*/) override {
+      abort();
+      return ::grpc::Status(::grpc::StatusCode::UNIMPLEMENTED, "");
+    }
+    virtual ::grpc::ServerUnaryReactor* RegisterPrompt(
+      ::grpc::CallbackServerContext* /*context*/, const ::grpc::ByteBuffer* /*request*/, ::grpc::ByteBuffer* /*response*/)  { return nullptr; }
+  };
+  template <class BaseClass>
+  class WithRawCallbackMethod_GetPrompt : public BaseClass {
+   private:
+    void BaseClassMustBeDerivedFromService(const Service* /*service*/) {}
+   public:
+    WithRawCallbackMethod_GetPrompt() {
+      ::grpc::Service::MarkMethodRawCallback(12,
+          new ::grpc::internal::CallbackUnaryHandler< ::grpc::ByteBuffer, ::grpc::ByteBuffer>(
+            [this](
+                   ::grpc::CallbackServerContext* context, const ::grpc::ByteBuffer* request, ::grpc::ByteBuffer* response) { return this->GetPrompt(context, request, response); }));
+    }
+    ~WithRawCallbackMethod_GetPrompt() override {
+      BaseClassMustBeDerivedFromService(this);
+    }
+    // disable synchronous version of this method
+    ::grpc::Status GetPrompt(::grpc::ServerContext* /*context*/, const ::mcp::GetPromptRequest* /*request*/, ::mcp::Prompt* /*response*/) override {
+      abort();
+      return ::grpc::Status(::grpc::StatusCode::UNIMPLEMENTED, "");
+    }
+    virtual ::grpc::ServerUnaryReactor* GetPrompt(
+      ::grpc::CallbackServerContext* /*context*/, const ::grpc::ByteBuffer* /*request*/, ::grpc::ByteBuffer* /*response*/)  { return nullptr; }
+  };
+  template <class BaseClass>
+  class WithRawCallbackMethod_ListPrompts : public BaseClass {
+   private:
+    void BaseClassMustBeDerivedFromService(const Service* /*service*/) {}
+   public:
+    WithRawCallbackMethod_ListPrompts() {
+      ::grpc::Service::MarkMethodRawCallback(13,
+          new ::grpc::internal::CallbackUnaryHandler< ::grpc::ByteBuffer, ::grpc::ByteBuffer>(
+            [this](
+                   ::grpc::CallbackServerContext* context, const ::grpc::ByteBuffer* request, ::grpc::ByteBuffer* response) { return this->ListPrompts(context, request, response); }));
+    }
+    ~WithRawCallbackMethod_ListPrompts() override {
+      BaseClassMustBeDerivedFromService(this);
+    }
+    // disable synchronous version of this method
+    ::grpc::Status ListPrompts(::grpc::ServerContext* /*context*/, const ::mcp::ListPromptsRequest* /*request*/, ::mcp::ListPromptsResponse* /*response*/) override {
+      abort();
+      return ::grpc::Status(::grpc::StatusCode::UNIMPLEMENTED, "");
+    }
+    virtual ::grpc::ServerUnaryReactor* ListPrompts(
+      ::grpc::CallbackServerContext* /*context*/, const ::grpc::ByteBuffer* /*request*/, ::grpc::ByteBuffer* /*response*/)  { return nullptr; }
+  };
+  template <class BaseClass>
+  class WithRawCallbackMethod_UpdatePrompt : public BaseClass {
+   private:
+    void BaseClassMustBeDerivedFromService(const Service* /*service*/) {}
+   public:
+    WithRawCallbackMethod_UpdatePrompt() {
+      ::grpc::Service::MarkMethodRawCallback(14,
+          new ::grpc::internal::CallbackUnaryHandler< ::grpc::ByteBuffer, ::grpc::ByteBuffer>(
+            [this](
+                   ::grpc::CallbackServerContext* context, const ::grpc::ByteBuffer* request, ::grpc::ByteBuffer* response) { return this->UpdatePrompt(context, request, response); }));
+    }
+    ~WithRawCallbackMethod_UpdatePrompt() override {
+      BaseClassMustBeDerivedFromService(this);
+    }
+    // disable synchronous version of this method
+    ::grpc::Status UpdatePrompt(::grpc::ServerContext* /*context*/, const ::mcp::UpdatePromptRequest* /*request*/, ::mcp::UpdatePromptResponse* /*response*/) override {
+      abort();
+      return ::grpc::Status(::grpc::StatusCode::UNIMPLEMENTED, "");
+    }
+    virtual ::grpc::ServerUnaryReactor* UpdatePrompt(
+      ::grpc::CallbackServerContext* /*context*/, const ::grpc::ByteBuffer* /*request*/, ::grpc::ByteBuffer* /*response*/)  { return nullptr; }
+  };
+  template <class BaseClass>
+  class WithRawCallbackMethod_DeletePrompt : public BaseClass {
+   private:
+    void BaseClassMustBeDerivedFromService(const Service* /*service*/) {}
+   public:
+    WithRawCallbackMethod_DeletePrompt() {
+      ::grpc::Service::MarkMethodRawCallback(15,
+          new ::grpc::internal::CallbackUnaryHandler< ::grpc::ByteBuffer, ::grpc::ByteBuffer>(
+            [this](
+                   ::grpc::CallbackServerContext* context, const ::grpc::ByteBuffer* request, ::grpc::ByteBuffer* response) { return this->DeletePrompt(context, request, response); }));
+    }
+    ~WithRawCallbackMethod_DeletePrompt() override {
+      BaseClassMustBeDerivedFromService(this);
+    }
+    // disable synchronous version of this method
+    ::grpc::Status DeletePrompt(::grpc::ServerContext* /*context*/, const ::mcp::DeletePromptRequest* /*request*/, ::mcp::DeletePromptResponse* /*response*/) override {
+      abort();
+      return ::grpc::Status(::grpc::StatusCode::UNIMPLEMENTED, "");
+    }
+    virtual ::grpc::ServerUnaryReactor* DeletePrompt(
+      ::grpc::CallbackServerContext* /*context*/, const ::grpc::ByteBuffer* /*request*/, ::grpc::ByteBuffer* /*response*/)  { return nullptr; }
+  };
+  template <class BaseClass>
   class WithStreamedUnaryMethod_Register : public BaseClass {
    private:
-    void BaseClassMustBeDerivedFromService(const Service *service) {}
+    void BaseClassMustBeDerivedFromService(const Service* /*service*/) {}
    public:
     WithStreamedUnaryMethod_Register() {
       ::grpc::Service::MarkMethodStreamed(0,
-        new ::grpc::internal::StreamedUnaryHandler< ::mcp::RegisterRequest, ::mcp::RegisterResponse>(std::bind(&WithStreamedUnaryMethod_Register<BaseClass>::StreamedRegister, this, std::placeholders::_1, std::placeholders::_2)));
+        new ::grpc::internal::StreamedUnaryHandler<
+          ::mcp::RegisterRequest, ::mcp::RegisterResponse>(
+            [this](::grpc::ServerContext* context,
+                   ::grpc::ServerUnaryStreamer<
+                     ::mcp::RegisterRequest, ::mcp::RegisterResponse>* streamer) {
+                       return this->StreamedRegister(context,
+                         streamer);
+                  }));
     }
     ~WithStreamedUnaryMethod_Register() override {
       BaseClassMustBeDerivedFromService(this);
     }
     // disable regular version of this method
-    ::grpc::Status Register(::grpc::ServerContext* context, const ::mcp::RegisterRequest* request, ::mcp::RegisterResponse* response) override {
+    ::grpc::Status Register(::grpc::ServerContext* /*context*/, const ::mcp::RegisterRequest* /*request*/, ::mcp::RegisterResponse* /*response*/) override {
       abort();
       return ::grpc::Status(::grpc::StatusCode::UNIMPLEMENTED, "");
     }
@@ -1374,17 +2201,24 @@ class MCPService final {
   template <class BaseClass>
   class WithStreamedUnaryMethod_Initialize : public BaseClass {
    private:
-    void BaseClassMustBeDerivedFromService(const Service *service) {}
+    void BaseClassMustBeDerivedFromService(const Service* /*service*/) {}
    public:
     WithStreamedUnaryMethod_Initialize() {
       ::grpc::Service::MarkMethodStreamed(1,
-        new ::grpc::internal::StreamedUnaryHandler< ::mcp::InitializeRequest, ::mcp::InitializeResult>(std::bind(&WithStreamedUnaryMethod_Initialize<BaseClass>::StreamedInitialize, this, std::placeholders::_1, std::placeholders::_2)));
+        new ::grpc::internal::StreamedUnaryHandler<
+          ::mcp::InitializeRequest, ::mcp::InitializeResult>(
+            [this](::grpc::ServerContext* context,
+                   ::grpc::ServerUnaryStreamer<
+                     ::mcp::InitializeRequest, ::mcp::InitializeResult>* streamer) {
+                       return this->StreamedInitialize(context,
+                         streamer);
+                  }));
     }
     ~WithStreamedUnaryMethod_Initialize() override {
       BaseClassMustBeDerivedFromService(this);
     }
     // disable regular version of this method
-    ::grpc::Status Initialize(::grpc::ServerContext* context, const ::mcp::InitializeRequest* request, ::mcp::InitializeResult* response) override {
+    ::grpc::Status Initialize(::grpc::ServerContext* /*context*/, const ::mcp::InitializeRequest* /*request*/, ::mcp::InitializeResult* /*response*/) override {
       abort();
       return ::grpc::Status(::grpc::StatusCode::UNIMPLEMENTED, "");
     }
@@ -1394,17 +2228,24 @@ class MCPService final {
   template <class BaseClass>
   class WithStreamedUnaryMethod_HandleRequest : public BaseClass {
    private:
-    void BaseClassMustBeDerivedFromService(const Service *service) {}
+    void BaseClassMustBeDerivedFromService(const Service* /*service*/) {}
    public:
     WithStreamedUnaryMethod_HandleRequest() {
       ::grpc::Service::MarkMethodStreamed(2,
-        new ::grpc::internal::StreamedUnaryHandler< ::mcp::JSONRPCRequest, ::mcp::JSONRPCResponse>(std::bind(&WithStreamedUnaryMethod_HandleRequest<BaseClass>::StreamedHandleRequest, this, std::placeholders::_1, std::placeholders::_2)));
+        new ::grpc::internal::StreamedUnaryHandler<
+          ::mcp::JSONRPCRequest, ::mcp::JSONRPCResponse>(
+            [this](::grpc::ServerContext* context,
+                   ::grpc::ServerUnaryStreamer<
+                     ::mcp::JSONRPCRequest, ::mcp::JSONRPCResponse>* streamer) {
+                       return this->StreamedHandleRequest(context,
+                         streamer);
+                  }));
     }
     ~WithStreamedUnaryMethod_HandleRequest() override {
       BaseClassMustBeDerivedFromService(this);
     }
     // disable regular version of this method
-    ::grpc::Status HandleRequest(::grpc::ServerContext* context, const ::mcp::JSONRPCRequest* request, ::mcp::JSONRPCResponse* response) override {
+    ::grpc::Status HandleRequest(::grpc::ServerContext* /*context*/, const ::mcp::JSONRPCRequest* /*request*/, ::mcp::JSONRPCResponse* /*response*/) override {
       abort();
       return ::grpc::Status(::grpc::StatusCode::UNIMPLEMENTED, "");
     }
@@ -1414,17 +2255,24 @@ class MCPService final {
   template <class BaseClass>
   class WithStreamedUnaryMethod_HandleNotification : public BaseClass {
    private:
-    void BaseClassMustBeDerivedFromService(const Service *service) {}
+    void BaseClassMustBeDerivedFromService(const Service* /*service*/) {}
    public:
     WithStreamedUnaryMethod_HandleNotification() {
       ::grpc::Service::MarkMethodStreamed(3,
-        new ::grpc::internal::StreamedUnaryHandler< ::mcp::JSONRPCNotification, ::mcp::Empty>(std::bind(&WithStreamedUnaryMethod_HandleNotification<BaseClass>::StreamedHandleNotification, this, std::placeholders::_1, std::placeholders::_2)));
+        new ::grpc::internal::StreamedUnaryHandler<
+          ::mcp::JSONRPCNotification, ::mcp::Empty>(
+            [this](::grpc::ServerContext* context,
+                   ::grpc::ServerUnaryStreamer<
+                     ::mcp::JSONRPCNotification, ::mcp::Empty>* streamer) {
+                       return this->StreamedHandleNotification(context,
+                         streamer);
+                  }));
     }
     ~WithStreamedUnaryMethod_HandleNotification() override {
       BaseClassMustBeDerivedFromService(this);
     }
     // disable regular version of this method
-    ::grpc::Status HandleNotification(::grpc::ServerContext* context, const ::mcp::JSONRPCNotification* request, ::mcp::Empty* response) override {
+    ::grpc::Status HandleNotification(::grpc::ServerContext* /*context*/, const ::mcp::JSONRPCNotification* /*request*/, ::mcp::Empty* /*response*/) override {
       abort();
       return ::grpc::Status(::grpc::StatusCode::UNIMPLEMENTED, "");
     }
@@ -1434,17 +2282,24 @@ class MCPService final {
   template <class BaseClass>
   class WithStreamedUnaryMethod_HandleBatchRequest : public BaseClass {
    private:
-    void BaseClassMustBeDerivedFromService(const Service *service) {}
+    void BaseClassMustBeDerivedFromService(const Service* /*service*/) {}
    public:
     WithStreamedUnaryMethod_HandleBatchRequest() {
       ::grpc::Service::MarkMethodStreamed(4,
-        new ::grpc::internal::StreamedUnaryHandler< ::mcp::JSONRPCBatchRequest, ::mcp::JSONRPCBatchResponse>(std::bind(&WithStreamedUnaryMethod_HandleBatchRequest<BaseClass>::StreamedHandleBatchRequest, this, std::placeholders::_1, std::placeholders::_2)));
+        new ::grpc::internal::StreamedUnaryHandler<
+          ::mcp::JSONRPCBatchRequest, ::mcp::JSONRPCBatchResponse>(
+            [this](::grpc::ServerContext* context,
+                   ::grpc::ServerUnaryStreamer<
+                     ::mcp::JSONRPCBatchRequest, ::mcp::JSONRPCBatchResponse>* streamer) {
+                       return this->StreamedHandleBatchRequest(context,
+                         streamer);
+                  }));
     }
     ~WithStreamedUnaryMethod_HandleBatchRequest() override {
       BaseClassMustBeDerivedFromService(this);
     }
     // disable regular version of this method
-    ::grpc::Status HandleBatchRequest(::grpc::ServerContext* context, const ::mcp::JSONRPCBatchRequest* request, ::mcp::JSONRPCBatchResponse* response) override {
+    ::grpc::Status HandleBatchRequest(::grpc::ServerContext* /*context*/, const ::mcp::JSONRPCBatchRequest* /*request*/, ::mcp::JSONRPCBatchResponse* /*response*/) override {
       abort();
       return ::grpc::Status(::grpc::StatusCode::UNIMPLEMENTED, "");
     }
@@ -1454,17 +2309,24 @@ class MCPService final {
   template <class BaseClass>
   class WithStreamedUnaryMethod_RegisterInputSchema : public BaseClass {
    private:
-    void BaseClassMustBeDerivedFromService(const Service *service) {}
+    void BaseClassMustBeDerivedFromService(const Service* /*service*/) {}
    public:
     WithStreamedUnaryMethod_RegisterInputSchema() {
       ::grpc::Service::MarkMethodStreamed(5,
-        new ::grpc::internal::StreamedUnaryHandler< ::mcp::RegisterInputSchemaRequest, ::mcp::RegisterInputSchemaResponse>(std::bind(&WithStreamedUnaryMethod_RegisterInputSchema<BaseClass>::StreamedRegisterInputSchema, this, std::placeholders::_1, std::placeholders::_2)));
+        new ::grpc::internal::StreamedUnaryHandler<
+          ::mcp::RegisterInputSchemaRequest, ::mcp::RegisterInputSchemaResponse>(
+            [this](::grpc::ServerContext* context,
+                   ::grpc::ServerUnaryStreamer<
+                     ::mcp::RegisterInputSchemaRequest, ::mcp::RegisterInputSchemaResponse>* streamer) {
+                       return this->StreamedRegisterInputSchema(context,
+                         streamer);
+                  }));
     }
     ~WithStreamedUnaryMethod_RegisterInputSchema() override {
       BaseClassMustBeDerivedFromService(this);
     }
     // disable regular version of this method
-    ::grpc::Status RegisterInputSchema(::grpc::ServerContext* context, const ::mcp::RegisterInputSchemaRequest* request, ::mcp::RegisterInputSchemaResponse* response) override {
+    ::grpc::Status RegisterInputSchema(::grpc::ServerContext* /*context*/, const ::mcp::RegisterInputSchemaRequest* /*request*/, ::mcp::RegisterInputSchemaResponse* /*response*/) override {
       abort();
       return ::grpc::Status(::grpc::StatusCode::UNIMPLEMENTED, "");
     }
@@ -1474,17 +2336,24 @@ class MCPService final {
   template <class BaseClass>
   class WithStreamedUnaryMethod_GetInputSchema : public BaseClass {
    private:
-    void BaseClassMustBeDerivedFromService(const Service *service) {}
+    void BaseClassMustBeDerivedFromService(const Service* /*service*/) {}
    public:
     WithStreamedUnaryMethod_GetInputSchema() {
       ::grpc::Service::MarkMethodStreamed(6,
-        new ::grpc::internal::StreamedUnaryHandler< ::mcp::GetInputSchemaRequest, ::mcp::InputSchema>(std::bind(&WithStreamedUnaryMethod_GetInputSchema<BaseClass>::StreamedGetInputSchema, this, std::placeholders::_1, std::placeholders::_2)));
+        new ::grpc::internal::StreamedUnaryHandler<
+          ::mcp::GetInputSchemaRequest, ::mcp::InputSchema>(
+            [this](::grpc::ServerContext* context,
+                   ::grpc::ServerUnaryStreamer<
+                     ::mcp::GetInputSchemaRequest, ::mcp::InputSchema>* streamer) {
+                       return this->StreamedGetInputSchema(context,
+                         streamer);
+                  }));
     }
     ~WithStreamedUnaryMethod_GetInputSchema() override {
       BaseClassMustBeDerivedFromService(this);
     }
     // disable regular version of this method
-    ::grpc::Status GetInputSchema(::grpc::ServerContext* context, const ::mcp::GetInputSchemaRequest* request, ::mcp::InputSchema* response) override {
+    ::grpc::Status GetInputSchema(::grpc::ServerContext* /*context*/, const ::mcp::GetInputSchemaRequest* /*request*/, ::mcp::InputSchema* /*response*/) override {
       abort();
       return ::grpc::Status(::grpc::StatusCode::UNIMPLEMENTED, "");
     }
@@ -1494,17 +2363,24 @@ class MCPService final {
   template <class BaseClass>
   class WithStreamedUnaryMethod_ListResources : public BaseClass {
    private:
-    void BaseClassMustBeDerivedFromService(const Service *service) {}
+    void BaseClassMustBeDerivedFromService(const Service* /*service*/) {}
    public:
     WithStreamedUnaryMethod_ListResources() {
       ::grpc::Service::MarkMethodStreamed(7,
-        new ::grpc::internal::StreamedUnaryHandler< ::mcp::ListResourcesRequest, ::mcp::ListResourcesResult>(std::bind(&WithStreamedUnaryMethod_ListResources<BaseClass>::StreamedListResources, this, std::placeholders::_1, std::placeholders::_2)));
+        new ::grpc::internal::StreamedUnaryHandler<
+          ::mcp::ListResourcesRequest, ::mcp::ListResourcesResult>(
+            [this](::grpc::ServerContext* context,
+                   ::grpc::ServerUnaryStreamer<
+                     ::mcp::ListResourcesRequest, ::mcp::ListResourcesResult>* streamer) {
+                       return this->StreamedListResources(context,
+                         streamer);
+                  }));
     }
     ~WithStreamedUnaryMethod_ListResources() override {
       BaseClassMustBeDerivedFromService(this);
     }
     // disable regular version of this method
-    ::grpc::Status ListResources(::grpc::ServerContext* context, const ::mcp::ListResourcesRequest* request, ::mcp::ListResourcesResult* response) override {
+    ::grpc::Status ListResources(::grpc::ServerContext* /*context*/, const ::mcp::ListResourcesRequest* /*request*/, ::mcp::ListResourcesResult* /*response*/) override {
       abort();
       return ::grpc::Status(::grpc::StatusCode::UNIMPLEMENTED, "");
     }
@@ -1514,17 +2390,24 @@ class MCPService final {
   template <class BaseClass>
   class WithStreamedUnaryMethod_ReadResource : public BaseClass {
    private:
-    void BaseClassMustBeDerivedFromService(const Service *service) {}
+    void BaseClassMustBeDerivedFromService(const Service* /*service*/) {}
    public:
     WithStreamedUnaryMethod_ReadResource() {
       ::grpc::Service::MarkMethodStreamed(8,
-        new ::grpc::internal::StreamedUnaryHandler< ::mcp::ReadResourceRequest, ::mcp::ReadResourceResult>(std::bind(&WithStreamedUnaryMethod_ReadResource<BaseClass>::StreamedReadResource, this, std::placeholders::_1, std::placeholders::_2)));
+        new ::grpc::internal::StreamedUnaryHandler<
+          ::mcp::ReadResourceRequest, ::mcp::ReadResourceResult>(
+            [this](::grpc::ServerContext* context,
+                   ::grpc::ServerUnaryStreamer<
+                     ::mcp::ReadResourceRequest, ::mcp::ReadResourceResult>* streamer) {
+                       return this->StreamedReadResource(context,
+                         streamer);
+                  }));
     }
     ~WithStreamedUnaryMethod_ReadResource() override {
       BaseClassMustBeDerivedFromService(this);
     }
     // disable regular version of this method
-    ::grpc::Status ReadResource(::grpc::ServerContext* context, const ::mcp::ReadResourceRequest* request, ::mcp::ReadResourceResult* response) override {
+    ::grpc::Status ReadResource(::grpc::ServerContext* /*context*/, const ::mcp::ReadResourceRequest* /*request*/, ::mcp::ReadResourceResult* /*response*/) override {
       abort();
       return ::grpc::Status(::grpc::StatusCode::UNIMPLEMENTED, "");
     }
@@ -1534,17 +2417,24 @@ class MCPService final {
   template <class BaseClass>
   class WithStreamedUnaryMethod_RegisterTool : public BaseClass {
    private:
-    void BaseClassMustBeDerivedFromService(const Service *service) {}
+    void BaseClassMustBeDerivedFromService(const Service* /*service*/) {}
    public:
     WithStreamedUnaryMethod_RegisterTool() {
       ::grpc::Service::MarkMethodStreamed(9,
-        new ::grpc::internal::StreamedUnaryHandler< ::mcp::RegisterToolRequest, ::mcp::RegisterToolResponse>(std::bind(&WithStreamedUnaryMethod_RegisterTool<BaseClass>::StreamedRegisterTool, this, std::placeholders::_1, std::placeholders::_2)));
+        new ::grpc::internal::StreamedUnaryHandler<
+          ::mcp::RegisterToolRequest, ::mcp::RegisterToolResponse>(
+            [this](::grpc::ServerContext* context,
+                   ::grpc::ServerUnaryStreamer<
+                     ::mcp::RegisterToolRequest, ::mcp::RegisterToolResponse>* streamer) {
+                       return this->StreamedRegisterTool(context,
+                         streamer);
+                  }));
     }
     ~WithStreamedUnaryMethod_RegisterTool() override {
       BaseClassMustBeDerivedFromService(this);
     }
     // disable regular version of this method
-    ::grpc::Status RegisterTool(::grpc::ServerContext* context, const ::mcp::RegisterToolRequest* request, ::mcp::RegisterToolResponse* response) override {
+    ::grpc::Status RegisterTool(::grpc::ServerContext* /*context*/, const ::mcp::RegisterToolRequest* /*request*/, ::mcp::RegisterToolResponse* /*response*/) override {
       abort();
       return ::grpc::Status(::grpc::StatusCode::UNIMPLEMENTED, "");
     }
@@ -1554,17 +2444,24 @@ class MCPService final {
   template <class BaseClass>
   class WithStreamedUnaryMethod_ListTools : public BaseClass {
    private:
-    void BaseClassMustBeDerivedFromService(const Service *service) {}
+    void BaseClassMustBeDerivedFromService(const Service* /*service*/) {}
    public:
     WithStreamedUnaryMethod_ListTools() {
       ::grpc::Service::MarkMethodStreamed(10,
-        new ::grpc::internal::StreamedUnaryHandler< ::mcp::ListToolsRequest, ::mcp::ListToolsResponse>(std::bind(&WithStreamedUnaryMethod_ListTools<BaseClass>::StreamedListTools, this, std::placeholders::_1, std::placeholders::_2)));
+        new ::grpc::internal::StreamedUnaryHandler<
+          ::mcp::ListToolsRequest, ::mcp::ListToolsResponse>(
+            [this](::grpc::ServerContext* context,
+                   ::grpc::ServerUnaryStreamer<
+                     ::mcp::ListToolsRequest, ::mcp::ListToolsResponse>* streamer) {
+                       return this->StreamedListTools(context,
+                         streamer);
+                  }));
     }
     ~WithStreamedUnaryMethod_ListTools() override {
       BaseClassMustBeDerivedFromService(this);
     }
     // disable regular version of this method
-    ::grpc::Status ListTools(::grpc::ServerContext* context, const ::mcp::ListToolsRequest* request, ::mcp::ListToolsResponse* response) override {
+    ::grpc::Status ListTools(::grpc::ServerContext* /*context*/, const ::mcp::ListToolsRequest* /*request*/, ::mcp::ListToolsResponse* /*response*/) override {
       abort();
       return ::grpc::Status(::grpc::StatusCode::UNIMPLEMENTED, "");
     }
@@ -1574,17 +2471,24 @@ class MCPService final {
   template <class BaseClass>
   class WithStreamedUnaryMethod_RegisterPrompt : public BaseClass {
    private:
-    void BaseClassMustBeDerivedFromService(const Service *service) {}
+    void BaseClassMustBeDerivedFromService(const Service* /*service*/) {}
    public:
     WithStreamedUnaryMethod_RegisterPrompt() {
       ::grpc::Service::MarkMethodStreamed(11,
-        new ::grpc::internal::StreamedUnaryHandler< ::mcp::RegisterPromptRequest, ::mcp::RegisterPromptResponse>(std::bind(&WithStreamedUnaryMethod_RegisterPrompt<BaseClass>::StreamedRegisterPrompt, this, std::placeholders::_1, std::placeholders::_2)));
+        new ::grpc::internal::StreamedUnaryHandler<
+          ::mcp::RegisterPromptRequest, ::mcp::RegisterPromptResponse>(
+            [this](::grpc::ServerContext* context,
+                   ::grpc::ServerUnaryStreamer<
+                     ::mcp::RegisterPromptRequest, ::mcp::RegisterPromptResponse>* streamer) {
+                       return this->StreamedRegisterPrompt(context,
+                         streamer);
+                  }));
     }
     ~WithStreamedUnaryMethod_RegisterPrompt() override {
       BaseClassMustBeDerivedFromService(this);
     }
     // disable regular version of this method
-    ::grpc::Status RegisterPrompt(::grpc::ServerContext* context, const ::mcp::RegisterPromptRequest* request, ::mcp::RegisterPromptResponse* response) override {
+    ::grpc::Status RegisterPrompt(::grpc::ServerContext* /*context*/, const ::mcp::RegisterPromptRequest* /*request*/, ::mcp::RegisterPromptResponse* /*response*/) override {
       abort();
       return ::grpc::Status(::grpc::StatusCode::UNIMPLEMENTED, "");
     }
@@ -1594,17 +2498,24 @@ class MCPService final {
   template <class BaseClass>
   class WithStreamedUnaryMethod_GetPrompt : public BaseClass {
    private:
-    void BaseClassMustBeDerivedFromService(const Service *service) {}
+    void BaseClassMustBeDerivedFromService(const Service* /*service*/) {}
    public:
     WithStreamedUnaryMethod_GetPrompt() {
       ::grpc::Service::MarkMethodStreamed(12,
-        new ::grpc::internal::StreamedUnaryHandler< ::mcp::GetPromptRequest, ::mcp::Prompt>(std::bind(&WithStreamedUnaryMethod_GetPrompt<BaseClass>::StreamedGetPrompt, this, std::placeholders::_1, std::placeholders::_2)));
+        new ::grpc::internal::StreamedUnaryHandler<
+          ::mcp::GetPromptRequest, ::mcp::Prompt>(
+            [this](::grpc::ServerContext* context,
+                   ::grpc::ServerUnaryStreamer<
+                     ::mcp::GetPromptRequest, ::mcp::Prompt>* streamer) {
+                       return this->StreamedGetPrompt(context,
+                         streamer);
+                  }));
     }
     ~WithStreamedUnaryMethod_GetPrompt() override {
       BaseClassMustBeDerivedFromService(this);
     }
     // disable regular version of this method
-    ::grpc::Status GetPrompt(::grpc::ServerContext* context, const ::mcp::GetPromptRequest* request, ::mcp::Prompt* response) override {
+    ::grpc::Status GetPrompt(::grpc::ServerContext* /*context*/, const ::mcp::GetPromptRequest* /*request*/, ::mcp::Prompt* /*response*/) override {
       abort();
       return ::grpc::Status(::grpc::StatusCode::UNIMPLEMENTED, "");
     }
@@ -1614,17 +2525,24 @@ class MCPService final {
   template <class BaseClass>
   class WithStreamedUnaryMethod_ListPrompts : public BaseClass {
    private:
-    void BaseClassMustBeDerivedFromService(const Service *service) {}
+    void BaseClassMustBeDerivedFromService(const Service* /*service*/) {}
    public:
     WithStreamedUnaryMethod_ListPrompts() {
       ::grpc::Service::MarkMethodStreamed(13,
-        new ::grpc::internal::StreamedUnaryHandler< ::mcp::ListPromptsRequest, ::mcp::ListPromptsResponse>(std::bind(&WithStreamedUnaryMethod_ListPrompts<BaseClass>::StreamedListPrompts, this, std::placeholders::_1, std::placeholders::_2)));
+        new ::grpc::internal::StreamedUnaryHandler<
+          ::mcp::ListPromptsRequest, ::mcp::ListPromptsResponse>(
+            [this](::grpc::ServerContext* context,
+                   ::grpc::ServerUnaryStreamer<
+                     ::mcp::ListPromptsRequest, ::mcp::ListPromptsResponse>* streamer) {
+                       return this->StreamedListPrompts(context,
+                         streamer);
+                  }));
     }
     ~WithStreamedUnaryMethod_ListPrompts() override {
       BaseClassMustBeDerivedFromService(this);
     }
     // disable regular version of this method
-    ::grpc::Status ListPrompts(::grpc::ServerContext* context, const ::mcp::ListPromptsRequest* request, ::mcp::ListPromptsResponse* response) override {
+    ::grpc::Status ListPrompts(::grpc::ServerContext* /*context*/, const ::mcp::ListPromptsRequest* /*request*/, ::mcp::ListPromptsResponse* /*response*/) override {
       abort();
       return ::grpc::Status(::grpc::StatusCode::UNIMPLEMENTED, "");
     }
@@ -1634,17 +2552,24 @@ class MCPService final {
   template <class BaseClass>
   class WithStreamedUnaryMethod_UpdatePrompt : public BaseClass {
    private:
-    void BaseClassMustBeDerivedFromService(const Service *service) {}
+    void BaseClassMustBeDerivedFromService(const Service* /*service*/) {}
    public:
     WithStreamedUnaryMethod_UpdatePrompt() {
       ::grpc::Service::MarkMethodStreamed(14,
-        new ::grpc::internal::StreamedUnaryHandler< ::mcp::UpdatePromptRequest, ::mcp::UpdatePromptResponse>(std::bind(&WithStreamedUnaryMethod_UpdatePrompt<BaseClass>::StreamedUpdatePrompt, this, std::placeholders::_1, std::placeholders::_2)));
+        new ::grpc::internal::StreamedUnaryHandler<
+          ::mcp::UpdatePromptRequest, ::mcp::UpdatePromptResponse>(
+            [this](::grpc::ServerContext* context,
+                   ::grpc::ServerUnaryStreamer<
+                     ::mcp::UpdatePromptRequest, ::mcp::UpdatePromptResponse>* streamer) {
+                       return this->StreamedUpdatePrompt(context,
+                         streamer);
+                  }));
     }
     ~WithStreamedUnaryMethod_UpdatePrompt() override {
       BaseClassMustBeDerivedFromService(this);
     }
     // disable regular version of this method
-    ::grpc::Status UpdatePrompt(::grpc::ServerContext* context, const ::mcp::UpdatePromptRequest* request, ::mcp::UpdatePromptResponse* response) override {
+    ::grpc::Status UpdatePrompt(::grpc::ServerContext* /*context*/, const ::mcp::UpdatePromptRequest* /*request*/, ::mcp::UpdatePromptResponse* /*response*/) override {
       abort();
       return ::grpc::Status(::grpc::StatusCode::UNIMPLEMENTED, "");
     }
@@ -1654,17 +2579,24 @@ class MCPService final {
   template <class BaseClass>
   class WithStreamedUnaryMethod_DeletePrompt : public BaseClass {
    private:
-    void BaseClassMustBeDerivedFromService(const Service *service) {}
+    void BaseClassMustBeDerivedFromService(const Service* /*service*/) {}
    public:
     WithStreamedUnaryMethod_DeletePrompt() {
       ::grpc::Service::MarkMethodStreamed(15,
-        new ::grpc::internal::StreamedUnaryHandler< ::mcp::DeletePromptRequest, ::mcp::DeletePromptResponse>(std::bind(&WithStreamedUnaryMethod_DeletePrompt<BaseClass>::StreamedDeletePrompt, this, std::placeholders::_1, std::placeholders::_2)));
+        new ::grpc::internal::StreamedUnaryHandler<
+          ::mcp::DeletePromptRequest, ::mcp::DeletePromptResponse>(
+            [this](::grpc::ServerContext* context,
+                   ::grpc::ServerUnaryStreamer<
+                     ::mcp::DeletePromptRequest, ::mcp::DeletePromptResponse>* streamer) {
+                       return this->StreamedDeletePrompt(context,
+                         streamer);
+                  }));
     }
     ~WithStreamedUnaryMethod_DeletePrompt() override {
       BaseClassMustBeDerivedFromService(this);
     }
     // disable regular version of this method
-    ::grpc::Status DeletePrompt(::grpc::ServerContext* context, const ::mcp::DeletePromptRequest* request, ::mcp::DeletePromptResponse* response) override {
+    ::grpc::Status DeletePrompt(::grpc::ServerContext* /*context*/, const ::mcp::DeletePromptRequest* /*request*/, ::mcp::DeletePromptResponse* /*response*/) override {
       abort();
       return ::grpc::Status(::grpc::StatusCode::UNIMPLEMENTED, "");
     }
