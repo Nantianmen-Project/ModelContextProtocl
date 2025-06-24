@@ -1,0 +1,1 @@
+/Library/Developer/CommandLineTools/usr/bin/c++  -isysroot /Library/Developer/CommandLineTools/SDKs/MacOSX14.4.sdk -Wl,-search_paths_first -Wl,-headerpad_max_install_names "CMakeFiles/lite-test.dir/src/google/protobuf/lite_unittest.cc.o" -o lite-test  libprotobuf-lite-test-common.a libprotobuf-lite.a libgmock_main.a libgmock.a 
